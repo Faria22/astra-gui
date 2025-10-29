@@ -4,7 +4,7 @@ import tkinter as tk
 from functools import partial
 from pathlib import Path
 from tkinter import ttk
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 from .cc_notebook_page_module import CcNotebookPage
 
@@ -102,7 +102,7 @@ class Dalton(CcNotebookPage):
         self.get_outputs()
 
     def get_basis(self) -> list[str]:
-        basis_path = self.controller.astra_gui_path / Path('basis_dalton.txt')
+        basis_path = self.controller.astra_gui_path / 'close_coupling' / 'basis_dalton.txt'
         with basis_path.open('r') as f:
             basis = [line.rstrip('\n') for line in f.readlines()]
 
@@ -317,7 +317,7 @@ class Dalton(CcNotebookPage):
 
         self.print_irrep()
 
-    def error_function(self) -> tuple[bool, Optional[str]]:
+    def error_function(self) -> tuple[bool, str | None]:
         if not self.path_exists(self.OUTPUT_FILE):
             return False, 'No output was generated.'
 
