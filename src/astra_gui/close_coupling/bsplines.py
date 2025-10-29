@@ -150,12 +150,14 @@ class Bsplines(CcNotebookPage):
             self.plot_frame.pack_forget()
 
     def erase_plot_parameters(self) -> None:
+        """Clear entries tied to plotting configuration."""
         self.num_plot_points_entry.delete(0, tk.END)
         self.r_min_plot_entry.delete(0, tk.END)
         self.r_min_plot_entry.insert(0, '0.0')
         self.r_max_plot_entry.delete(0, tk.END)
 
     def erase(self) -> None:
+        """Reset every widget on the notebook page."""
         self.cap_r1_entry.delete(0, tk.END)
         self.cap_r2_entry.delete(0, tk.END)
         self.mask_radius_entry.delete(0, tk.END)
@@ -167,6 +169,7 @@ class Bsplines(CcNotebookPage):
         self.erase_plot_parameters()
 
     def save(self) -> None:
+        """Validate the current configuration and write all required input files."""
         # Saving EXTERNAL_BASIS_BSPLINES.INP
         required_fields = [
             ('box size', self.box_size_entry, float),
@@ -324,6 +327,8 @@ class Bsplines(CcNotebookPage):
                 self.remove_path(self.PRISM_FOLDER)
 
     def load(self) -> None:
+        """Populate the form from existing Astra or PRISM files."""
+
         def find_line_with_equal_sign_ind(
             lines: list[str],
             string: str,
@@ -374,11 +379,11 @@ class Bsplines(CcNotebookPage):
 
             ti_notebook.show_cap_strengths()
 
-            for radius, entry in zip(
-                cap_radii_list,
-                [self.cap_r1_entry, self.cap_r2_entry],
-            ):
-                entry.insert(0, radius)
+        for radius, entry in zip(
+            cap_radii_list,
+            [self.cap_r1_entry, self.cap_r2_entry],
+        ):
+            entry.insert(0, radius)
 
         if mask_radius := get_value_after_equal('MASKRadius'):
             self.mask_radius_entry.insert(0, mask_radius)
@@ -429,6 +434,7 @@ class Bsplines(CcNotebookPage):
                 self.num_bspline_entry.insert(0, num_bspline_str)
 
     def run(self) -> None:
+        """Run the close-coupling integrals pipeline when prerequisites exist."""
         if not self.path_exists(Clscplng.CLSCPLNG_FILE):
             missing_required_file_popup(str(Clscplng.CLSCPLNG_FILE))
             return
@@ -439,6 +445,8 @@ class Bsplines(CcNotebookPage):
 
         self.run_astra_setup('iI', 'Integrals')
 
-    def print_irrep(self, _new_sym: bool = False) -> None: ...
+    def print_irrep(self, _new_sym: bool = False) -> None:
+        """Print current irreducible representations to the UI."""
 
-    def get_outputs(self) -> None: ...
+    def get_outputs(self) -> None:
+        """Refresh the outputs displayed by the notebook page."""

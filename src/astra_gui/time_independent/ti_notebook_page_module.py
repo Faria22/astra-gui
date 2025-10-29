@@ -1,3 +1,5 @@
+"""Base class for time-independent notebook pages and helpers."""
+
 import logging
 import tkinter as tk
 from abc import ABC, abstractmethod
@@ -19,6 +21,8 @@ logger = logging.getLogger(__name__)
 
 
 class TiNotebookPage(NotebookPage['TimeIndependentNotebook'], ABC):
+    """Shared UI and validation logic for time-independent workflows."""
+
     cc_syms: list[str] = []
     computed_syms: list[str] = []
     SCRIPT_FILE: Path
@@ -33,15 +37,22 @@ class TiNotebookPage(NotebookPage['TimeIndependentNotebook'], ABC):
         super().__init__(notebook, label, two_screens=True)
 
     @abstractmethod
-    def left_screen_def(self) -> None: ...
+    def left_screen_def(self) -> None:
+        """Populate the controls that live on the left-hand side."""
+        ...
 
     @abstractmethod
-    def get_commands(self) -> str: ...
+    def get_commands(self) -> str:
+        """Return the command string required to run the calculation."""
+        ...
 
     @abstractmethod
-    def load(self) -> None: ...
+    def load(self) -> None:
+        """Load persisted data into the widgets."""
+        ...
 
     def right_screen_def(self) -> None:
+        """Create the right-hand panels used across TI notebook pages."""
         self.right_screen.pack(side=tk.LEFT, anchor=tk.W, fill=tk.BOTH, expand=True, padx=10)
 
         left_frame = ttk.Frame(self.right_screen)
@@ -106,7 +117,13 @@ class TiNotebookPage(NotebookPage['TimeIndependentNotebook'], ABC):
 
     @staticmethod
     def get_caps_from_line(line: str) -> list[str]:
-        """Get caps strength list from script line."""
+        """Get caps strength list from script line.
+
+        Returns
+        -------
+        list[str]
+            CAP strengths parsed from the command line.
+        """
         keyword = '-cap'
         if keyword not in line:
             return []
@@ -119,7 +136,13 @@ class TiNotebookPage(NotebookPage['TimeIndependentNotebook'], ABC):
 
     @staticmethod
     def get_ecs_params_from_line(line: str) -> list[str]:
-        """Get ECS parameters list from script line."""
+        """Get ECS parameters list from script line.
+
+        Returns
+        -------
+        list[str]
+            Radius and angle values if present; empty list otherwise.
+        """
         ecs_params = []
 
         keyword = '-ECSradius'
@@ -137,9 +160,11 @@ class TiNotebookPage(NotebookPage['TimeIndependentNotebook'], ABC):
         return ecs_params
 
     def show_cap_radii(self, cap_radii: list[str]) -> None:
+        """Update the CAP radii label using the provided values."""
         self.cap_radii_label.config(text=f'Cap Radii [au]: {", ".join(cap_radii)}')
 
     def show_cap_strengths(self, cap_strengths: dict[str, list]) -> None:
+        """Update the CAP strengths label with formatted values."""
         text = 'Cap Strengths [au]:\n'
         for state_sym, strengths_list in cap_strengths.items():
             text += f'\n{state_sym}:'
@@ -149,6 +174,7 @@ class TiNotebookPage(NotebookPage['TimeIndependentNotebook'], ABC):
         self.cap_strenghts_label.config(text=text)
 
     def erase_cc_data(self) -> None:
+        """Clear CAP and target state tables."""
         for tv in [self.syms_tv, self.computed_syms_tv, self.target_states_tv]:
             for iid in tv.get_children():
                 tv.delete(iid)
@@ -160,6 +186,13 @@ class TiNotebookPage(NotebookPage['TimeIndependentNotebook'], ABC):
         check_computed: bool = True,
         new_computed_syms: list[str] | None = None,
     ) -> bool:
+        """Validate that requested ket symmetries exist in CC and computed sets.
+
+        Returns
+        -------
+        bool
+            True if all requested symmetries are valid.
+        """
         ket_sym_list = self.unpack_all_symmetry(ket_syms.split(','))
 
         if not new_computed_syms:
@@ -177,6 +210,7 @@ class TiNotebookPage(NotebookPage['TimeIndependentNotebook'], ABC):
         return True
 
     def show_cc_data(self, target_states_data: np.ndarray, open_channels: list[bool]) -> None:
+        """Populate the target states table and highlight closed channels."""
         self.show_computed_syms()
         self.target_states_tv.tag_configure(
             'disabled',
@@ -188,11 +222,13 @@ class TiNotebookPage(NotebookPage['TimeIndependentNotebook'], ABC):
             self.target_states_tv.insert('', 'end', values=(ind, *t_state), tags=tags)
 
     def show_computed_syms(self) -> None:
+        """Refresh the computed symmetry list from stored values."""
         self.computed_syms = self.get_computed_syms()
         for c_sym in self.pack_all_symmetry(self.computed_syms):
             self.computed_syms_tv.insert('', 'end', values=(c_sym,))
 
     def print_irrep(self, new_sym: bool = False) -> None:
+        """Refresh displayed irreps when the molecular symmetry changes."""
         if new_sym:
             for iid in self.syms_tv.get_children():
                 self.syms_tv.delete(iid)
@@ -200,21 +236,37 @@ class TiNotebookPage(NotebookPage['TimeIndependentNotebook'], ABC):
                 self.syms_tv.insert('', 'end', values=(irrep,))
 
     def save(self) -> None:
+        """Persist the generated script for the current notebook page."""
         if not (commands := self.get_commands()):
             return
 
         self.save_script(self.SCRIPT_FILE, commands, f'{self.label} calculation', convert_cs_irreps=True)
 
     def run(self) -> None:
+        """Execute the notebook script using the shared runner."""
         self.run_script(self.SCRIPT_FILE, self.label.capitalize(), self.SCRIPT_COMMANDS)
 
     def get_script_lines(self) -> list[str]:
+        """Return the saved script lines if a script exists.
+
+        Returns
+        -------
+        list[str]
+            Lines from the stored script, empty list when missing.
+        """
         if not self.path_exists(self.SCRIPT_FILE):
             return []
 
         return self.read_script(self.SCRIPT_FILE, convert_cs_irreps=True)
 
     def get_computed_syms(self) -> list[str]:
+        """Discover symmetries that already have stored close-coupling data.
+
+        Returns
+        -------
+        list[str]
+            Sorted list of symmetry labels with available data.
+        """
         assert self.controller.running_directory is not None
 
         base_path = Path('store/CloseCoupling')
@@ -249,6 +301,13 @@ class TiNotebookPage(NotebookPage['TimeIndependentNotebook'], ABC):
 
     @staticmethod
     def get_caps_from_entries(cap_entries: list[ttk.Entry]) -> list[str]:
+        """Extract CAP strengths from entry widgets, defaulting to zero.
+
+        Returns
+        -------
+        list[str]
+            CAP strengths coerced to strings, defaulting to ``'0.0'``.
+        """
         caps: list[str] = []
         for cap_entry in cap_entries:
             cap = cap_entry.get().strip()
@@ -264,6 +323,13 @@ class TiNotebookPage(NotebookPage['TimeIndependentNotebook'], ABC):
 
     @staticmethod
     def get_ecs_params_from_entries(ecs_entries: list[ttk.Entry]) -> list[str]:
+        """Collect ECS parameters from entry widgets, prompting if missing.
+
+        Returns
+        -------
+        list[str]
+            ECS parameters supplied by the user; empty when missing.
+        """
         ecs_params: list[str] = []
         for ecs_entry in ecs_entries:
             ecs_param = ecs_entry.get().strip()
@@ -277,7 +343,13 @@ class TiNotebookPage(NotebookPage['TimeIndependentNotebook'], ABC):
 
     @staticmethod
     def add_idle_thread_and_join_lines(lines: list[str]) -> str:
-        """Add idle thread number, and adds a blank line at the end to have the "wait $!" at the end."""
+        """Add idle thread number, returning joined commands with a trailing wait.
+
+        Returns
+        -------
+        str
+            Command string with CPU affinity and ``wait`` instructions.
+        """
         lines = [f'taskset -c ###(cpu) {line} &' for line in lines] + ['']
 
         return '\nwait $!\n\n'.join(lines)

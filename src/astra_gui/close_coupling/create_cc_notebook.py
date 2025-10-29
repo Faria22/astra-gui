@@ -1,3 +1,5 @@
+"""Notebook that groups pages used to set up close-coupling calculations."""
+
 from tkinter import ttk
 from typing import TYPE_CHECKING
 
@@ -15,7 +17,10 @@ if TYPE_CHECKING:
 
 
 class CreateCcNotebook(Notebook[CcNotebookPage]):
+    """Top-level notebook that walks the user through CC preparation steps."""
+
     def __init__(self, parent: ttk.Frame, controller: 'Astra') -> None:
+        """Initialise the notebook and load all close-coupling pages."""
         super().__init__(parent, controller, 'Create Close Coupling')
 
         self.reset()
@@ -23,6 +28,7 @@ class CreateCcNotebook(Notebook[CcNotebookPage]):
         self.add_pages([Molecule, Dalton, Lucia, Clscplng, Bsplines])
 
     def reset(self) -> None:
+        """Reset shared data structures and clear each page."""
         # Defines default values for those that need to be shared across notebookPages
         self.molecule_data: dict[str, str | int | bool] = {
             'basis': '6-311G',

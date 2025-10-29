@@ -4,6 +4,7 @@ import argparse
 import logging
 import os
 import shutil
+import sys
 import tkinter as tk
 from pathlib import Path
 from platform import system
@@ -62,7 +63,9 @@ class Astra(tk.Tk):
         # Checks if astra_dir and astra_gui_dir is set
         astra_gui_path = os.getenv('ASTRA_GUI_DIR', '')
         if not astra_gui_path:
-            logger.error('Did not find enviroment variable "ASTRA_GUI_DIR"')
+            logger.critical('Did not find enviroment variable "ASTRA_GUI_DIR"')
+            sys.exit(1)
+
         self.astra_gui_path = Path(astra_gui_path)
 
         self.notification = Notification(self.astra_gui_path / '.notification')
@@ -132,13 +135,22 @@ class Astra(tk.Tk):
                     # Create the path
                     try:
                         if self.ssh_client:
-                            self.ssh_client.run_remote_command(f'mkdir -p {directory_path}')
+                            stdout, stderr, exit_code = self.ssh_client.run_remote_command(
+                                f'mkdir -p {directory_path}',
+                            )
+                            if exit_code != 0:
+                                logger.error(
+                                    'Failed to create remote directory %s: %s',
+                                    directory_path,
+                                    stderr or stdout,
+                                )
+                                return
                             logger.info('Created remote directory: %s', directory_path)
                         else:
                             directory_path.mkdir(parents=True, exist_ok=True)
                             logger.info('Created local directory: %s', directory_path)
-                    except Exception as e:
-                        logger.error('Failed to create directory %s: %s', directory_path, e)
+                    except OSError as exc:
+                        logger.error('Failed to create directory %s: %s', directory_path, exc)
                         return
                 else:
                     # User chose not to create the path, so don't set it

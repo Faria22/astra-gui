@@ -1,3 +1,5 @@
+"""Logging utilities with colourised output and helper decorators."""
+
 import logging
 import sys
 from collections.abc import Callable
@@ -6,6 +8,8 @@ from typing import Any
 
 
 class ColoredFormatter(logging.Formatter):
+    """Format log messages using ANSI colours for readability."""
+
     COLORS = {
         'ERROR': '\033[38;5;196m',  # Bright Red
         'WARNING': '\033[38;5;208m',  # Bright Orange
@@ -15,6 +19,13 @@ class ColoredFormatter(logging.Formatter):
     }
 
     def format(self, record: logging.LogRecord) -> str:
+        """Wrap the formatted log message in the appropriate colour codes.
+
+        Returns
+        -------
+        str
+            Colourised log message ready for output.
+        """
         log_msg = super().format(record)
         color = ColoredFormatter.COLORS.get(record.levelname, ColoredFormatter.COLORS['RESET'])
         return f'{color}{log_msg}{ColoredFormatter.COLORS["RESET"]}'
@@ -22,7 +33,10 @@ class ColoredFormatter(logging.Formatter):
 
 # Creates a custom error function to automatically exit the code
 class CustomLogger(logging.Logger):
+    """Logger that exits the process whenever an error is emitted."""
+
     def error(self, msg, *args, **kwargs) -> None:  # noqa: ANN001
+        """Log an error and terminate the process with exit code 1."""
         if 'stacklevel' not in kwargs:
             kwargs['stacklevel'] = 2
         super().error(msg, *args, **kwargs)
@@ -30,6 +44,7 @@ class CustomLogger(logging.Logger):
 
 
 def setup_logger(debug: bool) -> None:
+    """Configure the root logger and attach a colourised console handler."""
     # Create the root logger and set its level
     logging.setLoggerClass(CustomLogger)
     logger = logging.getLogger()  # Root logger
@@ -56,10 +71,23 @@ def setup_logger(debug: bool) -> None:
 
 
 def log_operation(operation: str) -> Any:
-    """Log before and after operations."""
+    """Log start and finish messages around a callable.
+
+    Returns
+    -------
+    Callable[..., Any]
+        Decorator that wraps the target callable.
+    """
     logger = logging.getLogger(__name__)
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        """Wrap the provided function with pre/post logging statements.
+
+        Returns
+        -------
+        Callable[..., Any]
+            Wrapped function with logging side-effects.
+        """
         @wraps(func)
         def wrapper(*args, **kwargs) -> Any:
             logger.info('******************** Started %s.  ********************', operation, stacklevel=2)

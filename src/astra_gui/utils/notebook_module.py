@@ -1,3 +1,5 @@
+"""Shared notebook page infrastructure and supporting utilities."""
+
 import getpass
 import logging
 import re
@@ -11,13 +13,14 @@ from collections import defaultdict
 from pathlib import Path
 from platform import system
 from tkinter import ttk
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast
 
 import psutil
-from font_module import back_button_font, title_font
-from hover_widget_module import HoverWidgetClass
-from logger_module import log_operation
-from popup_module import (
+
+from .font_module import back_button_font, title_font
+from .hover_widget_module import HoverWidgetClass
+from .logger_module import log_operation
+from .popup_module import (
     calculation_is_running_popup,
     completed_calculation_popup,
     idle_processor_popup,
@@ -25,7 +28,7 @@ from popup_module import (
     missing_script_file_popup,
     required_field_popup,
 )
-from symmetry_module import Symmetry
+from .symmetry_module import Symmetry
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +40,8 @@ Nb = TypeVar('Nb', bound='Notebook')
 
 
 class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
+    """Base class for GUI notebook pages that share persistence helpers."""
+
     sym = Symmetry('C1')
     SAVE_BUTTON_PADY = (10, 0)
 
@@ -65,31 +70,51 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
             self.left_screen_def()
             self.right_screen_def()
 
-    def left_screen_def(self) -> None: ...
+    def left_screen_def(self) -> None:
+        """Populate the widgets that appear on the left-hand side."""
 
-    def right_screen_def(self) -> None: ...
-
-    @abstractmethod
-    def erase(self) -> None: ...
-
-    @abstractmethod
-    def save(self) -> None: ...
+    def right_screen_def(self) -> None:
+        """Populate the widgets that appear on the right-hand side."""
 
     @abstractmethod
-    def load(self) -> None: ...
+    def erase(self) -> None:
+        """Clear and reset the page state."""
+        ...
 
     @abstractmethod
-    def run(self) -> None: ...
+    def save(self) -> None:
+        """Persist the page state to disk."""
+        ...
 
     @abstractmethod
-    def print_irrep(self, _new_sym: bool = False) -> None: ...
+    def load(self) -> None:
+        """Load any persisted state into the UI."""
+        ...
 
     @abstractmethod
-    def get_outputs(self) -> None: ...
+    def run(self) -> None:
+        """Execute the associated calculation or script."""
+        ...
+
+    @abstractmethod
+    def print_irrep(self, _new_sym: bool = False) -> None:
+        """Handle updates when the molecular symmetry changes."""
+        ...
+
+    @abstractmethod
+    def get_outputs(self) -> None:
+        """Refresh any outputs produced by the calculation."""
+        ...
 
     @staticmethod
-    def find_line_ind(lines: list[str], string: str) -> Optional[int]:
-        """Find the first index of the line with 'string' inside."""
+    def find_line_ind(lines: list[str], string: str) -> int | None:
+        """Find the first index of the line with `string` inside.
+
+        Returns
+        -------
+        int | None
+            Index of the matching line, or ``None`` if not found.
+        """
         for i, line in enumerate(lines):
             if string in line:
                 return i
@@ -97,33 +122,49 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
 
     @staticmethod
     def get_value_from_lines(lines: list[str], string: str, shift: int = 1) -> str:
+        """Return the line that appears `shift` rows after the target string.
+
+        Returns
+        -------
+        str
+            Matching line or an empty string when the key is absent.
+        """
         if (ind := NotebookPage.find_line_ind(lines, string)) is not None:
             return lines[ind + shift]
         return ''
 
     @staticmethod
     def get_keyword_from_line(line: str, keyword: str) -> str:
-        """Get keyword value from script line."""
+        """Get keyword value from script line.
+
+        Returns
+        -------
+        str
+            Token immediately following the keyword.
+        """
         return line.split(keyword)[1].strip().split()[0].strip()
 
     @staticmethod
     def get_text_from_widget(entry: ttk.Entry | ttk.Combobox) -> str:
-        """Return the text from an entry or combobox."""
+        """Return the text from an entry or combobox.
+
+        Returns
+        -------
+        str
+            Stripped widget text.
+        """
         return entry.get().strip()
 
     @staticmethod
     def check_field_entries(
         required_fields: list[tuple[str, ttk.Entry | ttk.Combobox, type]],
     ) -> dict[str, str | int | float]:
-        """
-        Check if all the required fields are filled.
-        If so, returns a dictionary with all the entries.
-        If not, returns an empty dictionary.
+        """Validate required widgets and return their parsed values when successful.
 
-        :param required_fields: List of tuples with the field name, widget, and type the variable should be.
-
-        :return: Dictionary with the field name as key and the entry as value.
-                 Returns an empty dictionary if any field is empty or invalid.
+        Returns
+        -------
+        dict[str, str | int | float]
+            Validated field values keyed by field name; empty dict if validation fails.
         """
         field_entries: dict[str, str | int | float] = {}
         for field, widget, type_ in required_fields:
@@ -155,6 +196,13 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
         return field_entries
 
     def unpack_all_symmetry(self, sym_list: list[str]) -> list[str]:
+        """Expand shorthand entries such as '2ALL' into explicit irreps.
+
+        Returns
+        -------
+        list[str]
+            Expanded list containing individual symmetry labels.
+        """
         unpacked_list: list[str] = []
         for sym in sym_list:
             if 'all' in sym.lower():
@@ -166,6 +214,13 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
         return unpacked_list
 
     def pack_all_symmetry(self, sym_list: list[str]) -> list[str]:
+        """Collapse full irrep sets back into the shorthand `ALL` tokens.
+
+        Returns
+        -------
+        list[str]
+            Symmetry labels with sequences replaced by ``ALL``.
+        """
         packed_list: list[str] = []
 
         # Dictionary where the key is the multiplicity and the value is the number of symmetries with that multiplicity
@@ -183,7 +238,13 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
 
     @staticmethod
     def convert_cs_irreps(string: str) -> str:
-        """Convert A' (A'') to Ap (App) or vice-versa."""
+        """Convert A' (A'') to Ap (App) or vice-versa.
+
+        Returns
+        -------
+        str
+            Converted representation string.
+        """
         if "A'" in string:
             return string.replace("A''", 'App').replace("A'", 'Ap')
 
@@ -196,7 +257,13 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
         hover_text: str = '',
         **kwargs,
     ) -> ttk.Widget:
-        """Return a widget with hover text."""
+        """Return a widget with hover text.
+
+        Returns
+        -------
+        ttk.Widget
+            Instantiated widget with hover tooltip behaviour.
+        """
         return HoverWidgetClass(widget_class, frame, hover_text, **kwargs).widget
 
     @staticmethod
@@ -204,22 +271,39 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
         frame: ttk.Frame,
         row: int,
         col: int,
-    ) -> Optional[tk.Widget]:
+    ) -> tk.Widget | None:
         """
         Get the widget at a specific grid position.
 
         Assumes only one widget per grid location.
         Could be changed to check if multiple widgets in the same location and return list[tk.Widget] | tk.Widget
+
+        Returns
+        -------
+        tk.Widget | None
+            Widget occupying the grid position, or ``None`` if empty.
         """
         if widgets := frame.grid_slaves(row=row, column=col):
             return widgets[0]
         return None
 
-    def first_idle_cpu(self) -> tuple[str, Optional[int]]:
-        """Find the first 98% idle CPU, or the CPU with the highest idle percentage."""
+    def first_idle_cpu(self) -> tuple[str, int | None]:
+        """Find the first 98% idle CPU, or the CPU with the highest idle percentage.
+
+        Returns
+        -------
+        tuple[str, int | None]
+            CPU identifier and optional idle percentage.
+        """
 
         def get_cpu_stats_data() -> list[str]:
-            """Return the file lines if the file exists."""
+            """Return the file lines if the file exists.
+
+            Returns
+            -------
+            list[str]
+                Contents of ``/proc/stat`` split into lines.
+            """
             proc_stat_file = '/proc/stat'
             lines = []
             if self.ssh_client:
@@ -250,7 +334,13 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
             return lines
 
         def get_cpu_stats() -> list[tuple[str, int, int]]:
-            """Get CPU stats from /proc/stat."""
+            """Get CPU stats from /proc/stat.
+
+            Returns
+            -------
+            list[tuple[str, int, int]]
+                CPU name along with total and idle tick counts.
+            """
             stats: list[tuple[str, int, int]] = []
 
             data = get_cpu_stats_data()
@@ -316,7 +406,7 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
         file_name: Path,
         commands: str | dict[str, Any],
         name: str,
-        source_file: Optional[Path] = None,
+        source_file: Path | None = None,
         update_statusbar: bool = True,
         convert_cs_irreps: bool = False,
     ) -> None:
@@ -363,11 +453,12 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
         file_name: Path,
         data: dict,
         key_symbol: str = '#',
-        new_file_name: Optional[Path] = None,
+        new_file_name: Path | None = None,
         blank_lines: bool = True,
         update_statusbar: bool = True,
         convert_cs_irreps: bool = False,
     ) -> None:
+        """Fill a template file with data and write it to disk or the remote host."""
         if self.controller.running_directory is None:
             raise RuntimeError('No directory was selected')
 
@@ -407,6 +498,7 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
             self.controller.statusbar.show_message(f'{new_file_name} saved!', time=2)
 
     def save_file_from_blank(self, file_name: Path, lines: str, update_statusbar: bool = True) -> None:
+        """Write plain text to a file using the blank template helper."""
         self.save_file(
             'blank_file',
             {'lines': lines},
@@ -416,6 +508,7 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
         )
 
     def remove_path(self, path: Path) -> None:
+        """Delete a file or directory locally or on the remote host."""
         if self.ssh_client:
             self.ssh_client.run_remote_command(
                 f'rm -rf {self.controller.running_directory}/{path}',
@@ -427,12 +520,19 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
         else:
             shutil.rmtree(path)
 
-    def error_function(self) -> tuple[Optional[bool], Optional[str]]:  # noqa: PLR6301
-        """Check if calculation ran successfully, if not, handle it."""
+    def error_function(self) -> tuple[bool | None, str | None]:  # noqa: PLR6301
+        """Check if calculation ran successfully, if not, handle it.
+
+        Returns
+        -------
+        tuple[bool | None, str | None]
+            Success flag and optional error message.
+        """
         # To be overwritten by the necessary notebook pages
         return None, ''
 
     def show_completed_popup(self, script_name: str) -> None:
+        """Show a completion popup once a background script finishes."""
         success, error = None, None
 
         success, error = self.error_function()
@@ -494,6 +594,13 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
         thread.start()
 
     def check_running_programs(self, script_commands: list[str]) -> bool:
+        """Return True if any of the provided commands are already running.
+
+        Returns
+        -------
+        bool
+            True if an existing process matches the script commands.
+        """
         if self.ssh_client:
             for command in script_commands:
                 escaped_pattern = command.replace("'", "'\\''")  # Escape single quotes
@@ -543,7 +650,13 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
         file_name: Path,
         convert_cs_irreps: bool = False,
     ) -> list[str]:
-        """Return only the lines that have 'astra' from script file."""
+        """Return only the lines that have 'astra' from script file.
+
+        Returns
+        -------
+        list[str]
+            Filtered lines containing ``'astra'``.
+        """
         lines = self.read_file(file_name, convert_cs_irreps=convert_cs_irreps)
         return [line for line in lines if 'astra' in line]
 
@@ -555,7 +668,13 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
         convert_cs_irreps: bool = False,
         remove_comments: bool = True,
     ) -> list[str]:
-        """Return the lines of a file removing all comments."""
+        """Return the lines of a file removing all comments.
+
+        Returns
+        -------
+        list[str]
+            File contents split into lines with optional comment removal.
+        """
         if self.controller.running_directory is None:
             raise RuntimeError('No directory was selected')
 
@@ -595,7 +714,13 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
         convert_cs_irreps: bool = False,
         remove_comments: bool = True,
     ) -> str:
-        """Return the content of a file removing all comments."""
+        """Return the content of a file removing all comments.
+
+        Returns
+        -------
+        str
+            File content joined into a single string.
+        """
         return '\n'.join(
             self.read_file(
                 file_name,
@@ -607,6 +732,13 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
         )
 
     def path_exists(self, path: Path) -> bool:
+        """Check if a path exists either locally or on the remote host.
+
+        Returns
+        -------
+        bool
+            True if the path exists at the configured location.
+        """
         if self.controller.running_directory is None:
             raise RuntimeError('No directory was selected')
 
@@ -616,6 +748,7 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
         return path.exists()
 
     def mkdir(self, path: Path) -> None:
+        """Create a directory locally or via the remote connection."""
         if self.controller.running_directory is None:
             raise RuntimeError('No directory was selected')
 
@@ -628,6 +761,8 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
 
 
 class Notebook(ttk.Notebook, ABC, Generic[NbP]):
+    """Container widget that hosts multiple `NotebookPage` instances."""
+
     def __init__(
         self,
         parent: ttk.Frame,
@@ -661,7 +796,9 @@ class Notebook(ttk.Notebook, ABC, Generic[NbP]):
             self.pack(fill=tk.BOTH, expand=True, padx=5)
 
     @abstractmethod
-    def reset(self) -> None: ...
+    def reset(self) -> None:
+        """Reset notebook state before showing it."""
+        ...
 
     def back_button_command(self, _event: tk.Event) -> None:
         """Command for '<' button."""
@@ -669,6 +806,7 @@ class Notebook(ttk.Notebook, ABC, Generic[NbP]):
 
     @log_operation('adding pages to notebook')
     def add_pages(self, pages: list[type[NbP]]) -> None:
+        """Instantiate and add each page type to the underlying notebook."""
         for page in pages:
             cur_page = page(self)
             self.pages.append(cur_page)
@@ -676,26 +814,32 @@ class Notebook(ttk.Notebook, ABC, Generic[NbP]):
             logger.info('Added %s page.', cur_page.__class__.__name__)
 
     def get_process_from_pages(self, action: str, *args, **kwargs) -> None:
+        """Call the named action on every page in the notebook."""
         for page in self.pages:
             getattr(page, action)(*args, **kwargs)
             logger.info('Got %s from %s page.', action, page.__class__.__name__)
 
     @log_operation('erasing from all pages of notebook')
     def erase(self) -> None:
+        """Invoke the `erase` workflow on all pages."""
         self.get_process_from_pages('erase')
 
     @log_operation('saving from all pages of notebook')
     def save(self) -> None:
+        """Invoke the `save` workflow on all pages."""
         self.get_process_from_pages('save')
 
     @log_operation('loading from all pages of notebook')
     def load(self) -> None:
+        """Invoke the `load` workflow on all pages."""
         self.get_process_from_pages('load')
 
     @log_operation('getting outputs from all pages of notebook')
     def get_outputs(self) -> None:
+        """Ask each page to refresh its outputs."""
         self.get_process_from_pages('get_outputs')
 
     @log_operation('printing irrep all pages of notebook')
     def print_irrep(self, new_sym: bool = False) -> None:
+        """Notify every page about a potential symmetry change."""
         self.get_process_from_pages('print_irrep', new_sym)

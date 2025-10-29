@@ -1,3 +1,5 @@
+"""Notebook page that prepares Dalton input files and parses outputs."""
+
 import logging
 import re
 import tkinter as tk
@@ -16,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 class Dalton(CcNotebookPage):
+    """Notebook page for configuring and running Dalton calculations."""
+
     DALTON_FILE = Path('DALTON.INP')
     OUTPUT_FILE = Path('QC/DALTON.OUT')
     SCRIPT_COMMANDS = ['dalton.x']
@@ -98,10 +102,18 @@ class Dalton(CcNotebookPage):
         self.run_button.grid(row=9, column=0)
 
     def run(self) -> None:
+        """Execute Dalton and update dependent outputs."""
         self.run_astra_setup('d', 'Dalton')
         self.get_outputs()
 
     def get_basis(self) -> list[str]:
+        """Return the list of available Dalton basis sets.
+
+        Returns
+        -------
+        list[str]
+            Alphabetically sorted list of basis labels.
+        """
         basis_path = self.controller.astra_gui_path / 'close_coupling' / 'basis_dalton.txt'
         with basis_path.open('r') as f:
             basis = [line.rstrip('\n') for line in f.readlines()]
@@ -126,7 +138,13 @@ class Dalton(CcNotebookPage):
         """Update doubly/singly orbitals to the new irreducible representation."""
 
         def is_new_sym_occ_orb_row_shown(ind: int) -> bool:
-            """Check if the row is shown but doesn't have all the current irreps labels/entries."""
+            """Check if the row is shown but doesn't have all the current irreps labels/entries.
+
+            Returns
+            -------
+            bool
+                True when the row needs to be refreshed for a new symmetry.
+            """
             if not self.occupied_orb_vars[ind].get():
                 return False
 
@@ -166,6 +184,7 @@ class Dalton(CcNotebookPage):
                     ttk.Entry(self.occupied_orbs_frame, width=5).grid(row=row_ind + 1, column=i)
 
     def load(self) -> None:
+        """Load Dalton configuration from disk and update widgets."""
         def fill_occ_orbs_entries(occupied: list[str], row: int) -> None:
             for col, occ in enumerate(occupied, start=2):
                 widget = cast(ttk.Entry, self.get_widget_from_grid(self.occupied_orbs_frame, row, col))
@@ -216,6 +235,7 @@ class Dalton(CcNotebookPage):
         self.get_outputs()
 
     def get_outputs(self) -> None:
+        """Update downstream pages with Dalton output data if available."""
         if not self.path_exists(self.OUTPUT_FILE):
             return
 
@@ -228,6 +248,13 @@ class Dalton(CcNotebookPage):
         lucia_page.show_dalton_output()
 
     def get_doubly_occ_from_output(self) -> str:
+        """Extract the list of doubly occupied orbitals from the output file.
+
+        Returns
+        -------
+        str
+            Space-separated list of orbital labels; empty when unavailable.
+        """
         lines = self.read_file(self.OUTPUT_FILE)
         for line in lines:
             if '@    Occupied SCF orbitals' in line:
@@ -239,6 +266,13 @@ class Dalton(CcNotebookPage):
         return ''
 
     def get_orbital_energies(self) -> str:
+        """Return the formatted orbital energies section from the output.
+
+        Returns
+        -------
+        str
+            Multi-line string containing the orbital energies block.
+        """
         file_content = self.read_file_content(self.OUTPUT_FILE)
 
         # Define the pattern to match the section between two markers
@@ -253,6 +287,7 @@ class Dalton(CcNotebookPage):
         return ''
 
     def save(self) -> None:
+        """Validate entries and write updated Dalton inputs to disk."""
         def get_occ_orb_entries(ind: int) -> str:
             occupied: list[str] = []
             for col in range(2, len(self.sym.irrep) + 1):
@@ -303,6 +338,7 @@ class Dalton(CcNotebookPage):
         self.save_file(self.DALTON_FILE, self.notebook.dalton_data, '!', blank_lines=False)
 
     def erase(self) -> None:
+        """Reset Dalton form fields to their defaults."""
         self.basis_combo.set('6-311G')
         self.symmetry_combo.set('')
 
@@ -318,6 +354,13 @@ class Dalton(CcNotebookPage):
         self.print_irrep()
 
     def error_function(self) -> tuple[bool, str | None]:
+        """Return success status and error message for Dalton runs.
+
+        Returns
+        -------
+        tuple[bool, str | None]
+            Success flag and optional error description.
+        """
         if not self.path_exists(self.OUTPUT_FILE):
             return False, 'No output was generated.'
 
@@ -330,5 +373,12 @@ class Dalton(CcNotebookPage):
         )
 
     def successful_calculation(self) -> bool:
+        """Return True if Dalton reports a successful calculation.
+
+        Returns
+        -------
+        bool
+            True when the output indicates a successful run.
+        """
         content = self.read_file_content(self.OUTPUT_FILE)
         return 'Molecular wave function and energy' in content

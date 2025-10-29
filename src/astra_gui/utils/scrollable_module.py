@@ -1,3 +1,5 @@
+"""Scrollable frame/treeview helpers built atop Tkinter widgets."""
+
 import logging
 import tkinter as tk
 from tkinter import ttk
@@ -6,7 +8,10 @@ logger = logging.getLogger(__name__)
 
 
 class ScrollableFrame(ttk.Frame):
+    """A frame with a vertical scrollbar that hosts arbitrary widgets."""
+
     def __init__(self, master: ttk.Frame, height: int = 300) -> None:
+        """Initialise the canvas-backed frame and attach scroll bindings."""
         super().__init__(master)
 
         # Create a canvas and a scrollbar
@@ -28,13 +33,16 @@ class ScrollableFrame(ttk.Frame):
         self.inner_frame.bind('<Configure>', self._on_frame_configure)
 
     def _on_frame_configure(self, _event: tk.Event) -> None:
-        # Update the scroll region of the canvas to encompass the inner_frame
+        """Update the canvas scroll region whenever children resize."""
         self.canvas.configure(scrollregion=self.canvas.bbox('all'))
         self.canvas.config(width=self.inner_frame.winfo_reqwidth())
 
 
 class ScrollableTreeview(ttk.Treeview):
+    """Treeview widget that automatically adds a vertical scrollbar."""
+
     def __init__(self, parent_frame: ttk.Frame, *args, **kwargs) -> None:
+        """Create the treeview and pack an attached scrollbar."""
         super().__init__(parent_frame, *args, **kwargs)
 
         vsb = ttk.Scrollbar(parent_frame, orient='vertical', command=self.yview)

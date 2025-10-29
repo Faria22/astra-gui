@@ -1,8 +1,12 @@
+"""Utility for adding hover tooltips to Tk widgets."""
+
 import tkinter as tk
 from tkinter import ttk
 
 
 class HoverWidgetClass:
+    """Wrap a widget factory with simple hover-text behaviour."""
+
     def __init__(
         self,
         widget: type[ttk.Widget],
@@ -10,6 +14,7 @@ class HoverWidgetClass:
         hover_text: str,
         **kwargs,
     ) -> None:
+        """Create the widget and register enter/leave bindings."""
         self.widget = widget(frame, **kwargs)
         self.hover_text = hover_text
         self.popup: tk.Toplevel | None = None
@@ -18,6 +23,7 @@ class HoverWidgetClass:
         self.widget.bind('<Leave>', self.hide_hover_text)
 
     def show_hover_text(self, _event: tk.Event) -> None:
+        """Display the hover popup if it is not already visible."""
         if self.popup:
             return
 
@@ -33,6 +39,7 @@ class HoverWidgetClass:
         ttk.Label(self.popup, text=self.hover_text).pack(padx=5, pady=5)
 
     def hide_hover_text(self, _event: tk.Event) -> None:
+        """Destroy the hover popup when the cursor leaves the widget."""
         if self.popup:
             self.popup.destroy()
             self.popup = None

@@ -1,3 +1,5 @@
+"""Utilities for configuring and tabulating time-dependent laser pulses."""
+
 import logging
 import re
 import tkinter as tk
@@ -21,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 
 class Pulse:
+    """Describe a single pulse and provide helpers for formatting and evaluation."""
+
     PULSE_SHAPES = ['Gaussian', 'Cosine Squared']
 
     def __init__(
@@ -56,6 +60,7 @@ class Pulse:
         self.check_attributes()
 
     def check_attributes(self) -> None:
+        """Ensure all pulse attributes are present and convert them to floats."""
         attributes = {
             'central time': 'time',
             'central frequency': 'freq',
@@ -82,9 +87,23 @@ class Pulse:
         self.good_parameters = True
 
     def pulse_string(self) -> str:
+        """Return the ASTRA-formatted definition for this pulse.
+
+        Returns
+        -------
+        str
+            Formatted pulse block including the parameter string.
+        """
         return f'[{self.name}]{{{self.parameter_string()};}}'
 
     def parameter_string(self) -> str:
+        """Return the parameter tuple used when serialising the pulse.
+
+        Returns
+        -------
+        str
+            Space-delimited tuple containing pulse parameters.
+        """
         return f'({self.shape} {self.time} {self.freq} {self.fwhm} {self.cep} {self.intensity} {self.theta} {self.phi})'
 
     @overload
@@ -92,6 +111,13 @@ class Pulse:
     @overload
     def eval_envelope(self, t: np.ndarray) -> np.ndarray: ...
     def eval_envelope(self, t: float | np.ndarray) -> float | np.ndarray:
+        """Evaluate the pulse envelope for the specified time values.
+
+        Returns
+        -------
+        float | np.ndarray
+            Envelope amplitude at the provided time(s).
+        """
         if self.shape == 'G':
             return np.exp(-np.log(2) * (self.freq * (t - self.time) / (np.pi * self.fwhm)) ** 2)
 
@@ -105,6 +131,13 @@ class Pulse:
     def eval_pulse(self, t: np.ndarray) -> np.ndarray: ...
 
     def eval_pulse(self, t: float | np.ndarray) -> float | np.ndarray:
+        """Evaluate the full pulse field (envelope times oscillation).
+
+        Returns
+        -------
+        float | np.ndarray
+            Electric field value corresponding to the time(s).
+        """
         oscilation_funtion = np.cos(self.freq * (t - self.time) + self.cep)
         c_to_au = 137.03599911
         a0 = c_to_au / 18.73 / self.freq * np.sqrt(10 * self.intensity)
@@ -112,6 +145,13 @@ class Pulse:
         return a0 * self.eval_envelope(t) * oscilation_funtion
 
     def get_zero_envelope_time(self) -> float:
+        """Return the timespan required for the envelope to decay to zero.
+
+        Returns
+        -------
+        float
+            Half-width duration beyond which the envelope is negligible.
+        """
         if self.shape == 'G':
             threshold = 1e-5
             return np.sqrt(-np.log2(threshold)) * self.fwhm * np.pi / self.freq
@@ -119,27 +159,60 @@ class Pulse:
         return np.pi * 4.0 * self.fwhm / self.freq / 2
 
     def get_initial_and_final_times(self) -> tuple[float, float]:
+        """Return the interval that fully covers the pulse envelope.
+
+        Returns
+        -------
+        tuple[float, float]
+            Lower and upper bounds for the pulse support.
+        """
         dt = self.get_zero_envelope_time()
         return self.time - dt, self.time + dt
 
     def tabulate(self, initial_time: float, final_time: float, dt: float) -> str:
+        """Generate a tabulated representation of the pulse over the given interval.
+
+        Returns
+        -------
+        str
+            Multi-line string with time and field columns.
+        """
         times = np.arange(initial_time, final_time + dt, dt)
         pulse_values = self.eval_pulse(times)
 
-        lines = [f'{t} {pulse_value}' for t, pulse_value in zip(times, pulse_values)]
+        lines = [
+            f'{t} {pulse_value}'
+            for t, pulse_value in zip(times, pulse_values)
+        ]
 
         return '\n'.join(lines)
 
 
 class Pulses:
+    """Bundle a list of pulses that share a common label."""
+
     def __init__(self, name: str, pulses: list[Pulse]) -> None:
         self.name = name
         self.pulses = pulses
 
     def pulses_string(self) -> str:
+        """Return the ASTRA-formatted block describing this pulse train.
+
+        Returns
+        -------
+        str
+            ASTRA command referencing member pulse names.
+        """
         return f'[{self.name}]{{{";".join([pulse.name for pulse in self.pulses])};}}'
 
     def get_initial_and_final_times(self) -> tuple[float, float]:
+        """Return the min/max time that contains all pulses in the train.
+
+        Returns
+        -------
+        tuple[float, float]
+            Inclusive time bounds covering every pulse.
+        """
         min_time = np.inf
         max_time = -np.inf
 
@@ -152,12 +225,21 @@ class Pulses:
 
 
 class PumpProbePulses:
+    """Represent pump and probe pulse trains sampled across multiple delays."""
+
     def __init__(self, pump: Pulses, probe: Pulses, time_delays: np.ndarray) -> None:
         self.pump = pump
         self.probe = probe
         self.time_delays = time_delays
 
     def probe_string(self, time_delay: float) -> str:
+        """Return the parameter strings for probe pulses at the given delay.
+
+        Returns
+        -------
+        str
+            Concatenated parameter strings for delay-shifted probe pulses.
+        """
         probe_parameters = []
         for probe_pulse in self.probe.pulses:
             probe_pulse.time = time_delay
@@ -166,6 +248,13 @@ class PumpProbePulses:
         return ';'.join(probe_parameters)
 
     def pump_probe_string(self) -> str:
+        """Return the combined block describing the pump-probe sequence.
+
+        Returns
+        -------
+        str
+            Multi-line block containing pump and probe definitions per delay.
+        """
         lines = [
             f'[pump_probe_{time_delay}]{{{self.pump.name}; {self.probe_string(time_delay)};}}'
             for time_delay in self.time_delays
@@ -174,9 +263,23 @@ class PumpProbePulses:
         return '\n'.join(lines)
 
     def execute_string(self) -> str:
+        """Return the execute command referencing all generated sequences.
+
+        Returns
+        -------
+        str
+            EXECUTE command listing pump-probe configurations.
+        """
         return f'EXECUTE{{{self.pump.name};' + ';'.join([f'pump_probe_{td}' for td in self.time_delays]) + ';}'
 
     def get_initial_and_final_times(self) -> tuple[float, float]:
+        """Return the envelope bounds that cover both pump and probe pulses.
+
+        Returns
+        -------
+        tuple[float, float]
+            Inclusive time interval covering pump and probe pulses.
+        """
         min_time, max_time = self.pump.get_initial_and_final_times()
 
         for time_delay in self.time_delays[[0, -1]]:
@@ -191,6 +294,8 @@ class PumpProbePulses:
 
 
 class PulseParameterFrame(ttk.Frame, ABC):
+    """Abstract base frame providing shared helpers for pulse editors."""
+
     PULSE_PARAMETER_COLUMNS = [
         'Central time [au]',
         'Central frequency [au]',
@@ -227,10 +332,12 @@ class PulseParameterFrame(ttk.Frame, ABC):
 
     @abstractmethod
     def erase(self) -> None:
-        pass
+        """Clear all pulse-parameter widgets."""
 
 
 class PumpProbeFrame(PulseParameterFrame):
+    """GUI frame for configuring pump-probe simulations."""
+
     def __init__(self, parent: ttk.Frame) -> None:
         super().__init__(parent)
 
@@ -322,6 +429,13 @@ class PumpProbeFrame(PulseParameterFrame):
     def save(
         self,
     ) -> tuple[dict[str, str], dict[str, str], Path, Path, dict[str, str]] | None:
+        """Validate the form and return serialized pump-probe inputs.
+
+        Returns
+        -------
+        tuple[dict[str, str], dict[str, str], Path, Path, dict[str, str]] | None
+            Pulse data, TDSE data, pulse/TDSE file paths, and tabulation mapping.
+        """
         required_fields = [
             ('Minimum time-delay', self.min_tau, float),
             ('Maximum time-delay', self.max_tau, float),
@@ -452,7 +566,13 @@ class PumpProbeFrame(PulseParameterFrame):
         self.sim_label.insert(0, sim_label)
 
     def _extract_pump_data(self, pulse_lines: list[str]) -> np.ndarray | None:
-        """Extract pump pulse parameters from pulse lines."""
+        """Extract pump pulse parameters from pulse lines.
+
+        Returns
+        -------
+        np.ndarray | None
+            Column-major array of pump parameters, or ``None`` if parsing fails.
+        """
         pump_pulse_lines = []
 
         # Find lines that define individual pump pulses (before pump_train)
@@ -498,7 +618,13 @@ class PumpProbeFrame(PulseParameterFrame):
         return np.array(pump_data).T if pump_data else None
 
     def _extract_probe_data(self, pulse_lines: list[str]) -> tuple[np.ndarray | None, list[float]]:
-        """Extract probe pulse parameters and time delays from pulse lines."""
+        """Extract probe pulse parameters and time delays from pulse lines.
+
+        Returns
+        -------
+        tuple[np.ndarray | None, list[float]]
+            Probe data array and list of time delays.
+        """
         pump_probe_lines = []
 
         # Find pump_probe lines like [pump_probe_0.1]{pump_train; (C 0.1 5.0 5.0 90.0 0.5 45.0 90.0);}
@@ -587,6 +713,7 @@ class PumpProbeFrame(PulseParameterFrame):
         self.delta_tau.insert(0, str(delta_tau))
 
     def erase(self) -> None:
+        """Reset pump-probe widgets to their defaults."""
         self.pump_shape_combo.current(0)
         self.pump_table.reset()
 
@@ -600,6 +727,8 @@ class PumpProbeFrame(PulseParameterFrame):
 
 
 class CustomPulseFrame(PulseParameterFrame):
+    """GUI frame for configuring arbitrary pulse trains."""
+
     def __init__(self, parent: ttk.Frame) -> None:
         super().__init__(parent)
 
@@ -704,6 +833,7 @@ class CustomPulseFrame(PulseParameterFrame):
         self.sim_label_entry.grid(row=5, column=1)
 
     def estimate_simulation_parameters(self) -> None:
+        """Infer simulation window defaults from the configured pulses."""
         pulse_data = self.pulse_table.get().T
 
         if np.any(pulse_data == ''):  # noqa: PLC1901
@@ -729,6 +859,13 @@ class CustomPulseFrame(PulseParameterFrame):
         self.save_time_step_entry.insert(0, str(PulsePage.SAVE_TIME_STEP))
 
     def save(self) -> tuple[dict[str, str], dict[str, str], Path, Path, dict[str, str]] | None:
+        """Validate the form and return serialized custom pulse inputs.
+
+        Returns
+        -------
+        tuple[dict[str, str], dict[str, str], Path, Path, dict[str, str]] | None
+            Pulse data, TDSE data, file paths, and tabulation mapping.
+        """
         pulse_data = self.pulse_table.get().T
 
         if np.any(pulse_data == ''):  # noqa: PLC1901
@@ -794,6 +931,7 @@ class CustomPulseFrame(PulseParameterFrame):
         )
 
     def load(self, pulse_lines: list[str], tdse_lines: list[str], sim_label: str) -> None:
+        """Populate the frame with data loaded from existing pulse and TDSE files."""
         pulse_strings = [
             match.group(1) for pulse_line in pulse_lines[:-2] for match in re.compile(r'\((.*?)\)').finditer(pulse_line)
         ]
@@ -812,6 +950,13 @@ class CustomPulseFrame(PulseParameterFrame):
 
     @staticmethod
     def extract_tdse_parameters(tdse_lines: list[str]) -> tuple[str, str, str, str, str]:
+        """Extract TDSE configuration values from the serialised lines.
+
+        Returns
+        -------
+        tuple[str, str, str, str, str]
+            Initial time, final time, final pulse time, time step, and save interval.
+        """
         def extract_value(line: str) -> str:
             return line.split('=')[1].strip()
 
@@ -842,6 +987,13 @@ class CustomPulseFrame(PulseParameterFrame):
 
     @staticmethod
     def convert_pulse_data(pulse_strings: list[str]) -> np.ndarray:
+        """Convert serialised pulse strings into table-friendly arrays.
+
+        Returns
+        -------
+        np.ndarray
+            Array suitable for populating pulse tables.
+        """
         shapes = {shape[0]: shape for shape in Pulse.PULSE_SHAPES}
 
         pulse_data = []
@@ -861,6 +1013,7 @@ class CustomPulseFrame(PulseParameterFrame):
         return np.array(pulse_data).T
 
     def erase_simulation_parameters(self) -> None:
+        """Clear any TDSE simulation parameter entries."""
         self.initial_time_entry.delete(0, tk.END)
         self.final_time_entry.delete(0, tk.END)
         self.final_pulse_time_entry.delete(0, tk.END)
@@ -868,6 +1021,7 @@ class CustomPulseFrame(PulseParameterFrame):
         self.save_time_step_entry.delete(0, tk.END)
 
     def erase(self) -> None:
+        """Reset the custom pulse form to its initial state."""
         self.pulse_table.reset()
 
         self.erase_simulation_parameters()
@@ -875,6 +1029,8 @@ class CustomPulseFrame(PulseParameterFrame):
 
 
 class PulsePage(TdNotebookPage):
+    """Notebook page that gathers all pulse-related configuration."""
+
     BASE_PULSE_FILE = Path('PULSE.INP')
     BASE_TDSE_FILE = Path('TDSE.INP')
     CUSTOM_PULSE_FILE = Path('PULSE.INP_Custom')
@@ -906,6 +1062,7 @@ class PulsePage(TdNotebookPage):
         self.save_button.grid(row=3, column=0, sticky='w', pady=15)
 
     def show_sim_type_frame(self, _event: tk.Event | None = None) -> None:
+        """Show the frame matching the selected simulation type."""
         if self.sim_type_combo.get() == 'Pump-probe':
             self.pump_probe_frame.grid(row=2, column=0, columnspan=10, sticky='w')
             self.custom_pulse_frame.grid_forget()
@@ -914,13 +1071,16 @@ class PulsePage(TdNotebookPage):
             self.pump_probe_frame.grid_forget()
 
     def erase(self) -> None:
+        """Reset the page to its default state."""
         self.sim_type_combo.current(0)
         self.pump_probe_frame.erase()
         self.custom_pulse_frame.erase()
 
-    def load(self) -> None: ...
+    def load(self) -> None:
+        """Load pulse data using the currently configured source."""
 
     def load_files(self) -> None:
+        """Load pulse and TDSE files from disk or the remote host."""
         title = 'Select pulse file'
         if self.ssh_client:
             pulse_file = self.ssh_client.browse_remote(
@@ -960,9 +1120,11 @@ class PulsePage(TdNotebookPage):
 
         self.show_sim_type_frame()
 
-    def get_outputs(self) -> None: ...
+    def get_outputs(self) -> None:
+        """PAD notebook interface expects this hook; nothing to refresh yet."""
 
     def save(self) -> None:
+        """Persist the pulse configuration and any generated tabulation files."""
         if self.sim_type_combo.get() == 'Pump-probe':
             ret = self.pump_probe_frame.save()
         else:
@@ -983,6 +1145,8 @@ class PulsePage(TdNotebookPage):
         for pulse_name, pulse_tabulation_data in pulse_tabulation.items():
             self.save_file_from_blank(Path(f'{pulse_name}.DAT'), pulse_tabulation_data)
 
-    def print_irrep(self, _new_sym: bool = False) -> None: ...
+    def print_irrep(self, _new_sym: bool = False) -> None:
+        """Relay symmetry changes to both pulse configuration frames."""
 
-    def run(self) -> None: ...
+    def run(self) -> None:
+        """PAD page does not launch external scripts directly."""

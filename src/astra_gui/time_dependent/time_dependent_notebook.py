@@ -1,3 +1,5 @@
+"""Notebook that aggregates pages for time-dependent calculations."""
+
 from tkinter import ttk
 from typing import TYPE_CHECKING
 
@@ -11,10 +13,14 @@ if TYPE_CHECKING:
 
 
 class TimeDependentNotebook(Notebook[TdNotebookPage]):
+    """Container notebook for time-dependent workflows."""
+
     def __init__(self, parent: ttk.Frame, controller: 'Astra') -> None:
+        """Initialise the notebook and add the pulse configuration page."""
         super().__init__(parent, controller, 'Run Time Independent Programs')
 
         self.add_pages([PulsePage])
 
     def reset(self) -> None:
+        """Reset the notebook to its default state."""
         self.erase()

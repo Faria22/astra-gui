@@ -1,3 +1,5 @@
+"""Lightweight symmetry helper used across notebook pages."""
+
 import logging
 from collections import Counter
 from itertools import combinations
@@ -6,6 +8,8 @@ logger = logging.getLogger(__name__)
 
 
 class Symmetry:  # noqa: PLW1641
+    """Encapsulate group-theory data for commonly used molecular symmetries."""
+
     GROUPS = (
         'C1',
         'Cs',
@@ -18,6 +22,7 @@ class Symmetry:  # noqa: PLW1641
     )
 
     def __init__(self, group: str) -> None:
+        """Initialise the symmetry object and populate convenience tables."""
         group = group.capitalize()
         if group not in self.GROUPS:
             logger.error('Invalid symmetry group: %s', group)
@@ -29,9 +34,23 @@ class Symmetry:  # noqa: PLW1641
         self.mult_table = self.get_mult_table()
 
     def __repr__(self) -> str:
+        """Return a concise representation describing the group and irreps.
+
+        Returns
+        -------
+        str
+            Readable string summarising the symmetry instance.
+        """
         return f'Symmetry(group: {self.group}, irrep: {self.irrep})'
 
     def get_generators(self) -> list[str]:
+        """Return the set of generators for the current symmetry group.
+
+        Returns
+        -------
+        list[str]
+            Generator labels defining the group.
+        """
         generators = {
             'C1': [],
             'Cs': ['Z'],
@@ -47,6 +66,13 @@ class Symmetry:  # noqa: PLW1641
 
     @staticmethod
     def get_generators_list() -> list[str]:
+        """Return a list of human-readable generator descriptions.
+
+        Returns
+        -------
+        list[str]
+            Generator summaries grouped by symmetry label.
+        """
         output: list[str] = [f'{Symmetry.GROUPS[0]} (no generators)']
         for group in Symmetry.GROUPS[1:]:
             generators = ' '.join(Symmetry(group).generators)
@@ -55,6 +81,13 @@ class Symmetry:  # noqa: PLW1641
         return output
 
     def get_all_symmetry_elements(self) -> list[str]:
+        """Compute all symmetry elements by combining generators.
+
+        Returns
+        -------
+        list[str]
+            Symmetry elements derived from the generator set.
+        """
         elements: list[str] = []
         for r in range(1, len(self.generators) + 1):
             for comb in combinations(self.generators, r):
@@ -64,6 +97,13 @@ class Symmetry:  # noqa: PLW1641
         return elements
 
     def get_irrep(self) -> list[str]:
+        """Return the irreducible representations for the current group.
+
+        Returns
+        -------
+        list[str]
+            Irreps including the `ALL` shorthand element.
+        """
         irreps = {
             'C1': ['A'],
             'Cs': ["A'", "A''"],
@@ -77,6 +117,13 @@ class Symmetry:  # noqa: PLW1641
         return ['ALL'] + irreps[self.group]
 
     def get_dipoles(self) -> list[str]:
+        """Return the dipole irreps (x, y, z) for the group.
+
+        Returns
+        -------
+        list[str]
+            Irreps corresponding to the x, y, and z dipoles.
+        """
         dipoles = {
             'C1': ['A', 'A', 'A'],
             'Cs': ["A'", "A'", "A''"],
@@ -90,6 +137,13 @@ class Symmetry:  # noqa: PLW1641
         return dipoles[self.group]
 
     def get_mult_table(self) -> list[list[str]]:
+        """Return the multiplication table for the group's irreps.
+
+        Returns
+        -------
+        list[list[str]]
+            Lookup table indexed by irreps.
+        """
         table = {
             'C1': [['A']],
             'Cs': [["A'", "A''"], ["A''", "A'"]],
@@ -122,11 +176,25 @@ class Symmetry:  # noqa: PLW1641
         return table[self.group]
 
     def mult(self, i_irrep: str, j_irrep: str) -> str:
+        """Multiply two irreps and return the resulting representation.
+
+        Returns
+        -------
+        str
+            Resulting irrep label.
+        """
         i_ind = self.irrep.index(i_irrep) - 1
         j_ind = self.irrep.index(j_irrep) - 1
         return self.mult_table[i_ind][j_ind]
 
     def __eq__(self, other: object) -> bool:
+        """Compare symmetry objects by their group label.
+
+        Returns
+        -------
+        bool
+            True if both objects refer to the same group.
+        """
         if isinstance(other, Symmetry):
             return self.group == other.group
         return False

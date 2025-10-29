@@ -1,3 +1,5 @@
+"""Close-coupling configuration page and supporting widgets."""
+
 import logging
 import re
 import tkinter as tk
@@ -24,13 +26,17 @@ logger = logging.getLogger(__name__)
 
 
 class Clscplng(CcNotebookPage):
+    """Notebook page that manages close-coupling calculations."""
+
     CLSCPLNG_FILE = Path('CLSCPLNG.INP')
     SCRIPT_COMMANDS = ['astraConvertDensityMatrices']
 
     def __init__(self, notebook: 'CreateCcNotebook') -> None:
+        """Initialise the page and prepare the layout."""
         super().__init__(notebook, 'Close Coupling', two_screens=True)
 
     def left_screen_def(self) -> None:
+        """Populate widgets displayed on the left-hand pane."""
         ttk.Label(self.left_screen, text='Full basis:').grid(row=0, column=0, padx=5, pady=5)
         self.full_basis_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(self.left_screen, variable=self.full_basis_var, command=self.show_cc_list).grid(
@@ -70,6 +76,7 @@ class Clscplng(CcNotebookPage):
         self.run_button.grid(row=6, column=0)
 
     def right_screen_def(self) -> None:
+        """Populate widgets displayed on the right-hand pane."""
         ttk.Button(self.right_screen, text='Get Target States', command=self.show_lucia_output).pack(padx=5, pady=5)
 
         # list of orbital energies
@@ -107,7 +114,10 @@ class Clscplng(CcNotebookPage):
 
         self.ions_cl.erase()
 
-        for ind, (state, energy, relative_energy) in enumerate(zip(states, energies, relative_energies), 1):
+        for ind, (state, energy, relative_energy) in enumerate(
+            zip(states, energies, relative_energies),
+            1,
+        ):
             self.ions_cl.add_item((ind, state, energy, '', relative_energy), state)
 
         selected_ions = []
@@ -130,12 +140,14 @@ class Clscplng(CcNotebookPage):
         self.cc_list.put(mults, syms, selected_ions, new_data, self.sym.irrep[1:])
 
     def print_irrep(self, new_sym: bool = False) -> None:
+        """Refresh the irreps displayed when the symmetry changes."""
         if not new_sym:
             return
 
         self.cc_list.add_irrep(self.sym.irrep)
 
     def erase(self) -> None:
+        """Reset widgets and cached data to their default state."""
         self.ions_cl.erase()
         self.cc_list.erase()
         self.cc_list.create()
@@ -146,6 +158,7 @@ class Clscplng(CcNotebookPage):
         self.charge_entry.delete(0, tk.END)
 
     def show_cc_list(self, _event: tk.Event | None = None) -> None:
+        """Toggle visibility of the CC basis section."""
         if not self.full_basis_var.get():
             self.cc_basis_label.grid(row=3, column=0, padx=5, pady=5)
             self.cc_list_frame.grid(row=4, column=0, columnspan=10)
@@ -154,6 +167,7 @@ class Clscplng(CcNotebookPage):
             self.cc_list_frame.grid_forget()
 
     def run(self) -> None:
+        """Run Astra scripts after validating mandatory prerequisites."""
         if not self.notebook.lucia_data['states']:
             missing_required_calculation_popup('Lucia')
             return
@@ -164,6 +178,7 @@ class Clscplng(CcNotebookPage):
         )
 
     def save(self) -> None:
+        """Persist the close-coupling configuration to disk."""
         required_fields = [('lmax', self.lmax_entry, int), ('charge', self.charge_entry, int)]
 
         if not (required_field_values := self.check_field_entries(required_fields)):
@@ -203,6 +218,8 @@ class Clscplng(CcNotebookPage):
         self.get_cc_data()
 
     def load(self) -> None:
+        """Populate the form based on an existing CLSCPLNG.INP file."""
+
         def get_value_after_equal(lines: list[str], string: str) -> str:
             value = self.get_value_from_lines(lines, string.upper(), shift=0)
             if value:
@@ -210,7 +227,13 @@ class Clscplng(CcNotebookPage):
             return ''
 
         def get_mult_and_sym(string: str) -> list[str]:
-            """Get the multiplicity and symmetry from the basis list."""
+            """Get the multiplicity and symmetry from the basis list.
+
+            Returns
+            -------
+            list[str]
+                Two-element list containing multiplicity and symmetry.
+            """
             # Remove spaces around special characters like [ ] and {
             cleaned_string = re.sub(r'\s*([\[\]\{\}])\s*', r'\1', string)
 
@@ -289,6 +312,7 @@ class Clscplng(CcNotebookPage):
         self.cc_list.check_all_mults()
 
     def set_energy_shifts(self, parent_ions: list[str], energy_shifts: list[str]) -> None:
+        """Update the energy-shift column for the selected ions."""
         for ion, energy_shift in zip(parent_ions, energy_shifts):
             if float(energy_shift) == 0:
                 continue
@@ -299,6 +323,13 @@ class Clscplng(CcNotebookPage):
 
     @staticmethod
     def get_mult_from_states(states: list[str]) -> list[str]:
+        """Extract multiplicities from state strings such as '2A1'.
+
+        Returns
+        -------
+        list[str]
+            Multiplicities (as strings) parsed from the state labels.
+        """
         mults: list[str] = []
         for state in states:
             if not (match := re.match(r'(\d+)([A-Za-z].*)', state)):
@@ -309,6 +340,7 @@ class Clscplng(CcNotebookPage):
         return mults
 
     def get_cc_data(self) -> None:
+        """Cache the current CC configuration and show it in the TI notebook."""
         target_states = self.ions_cl.get_target_states()
 
         if self.full_basis_var.get():
@@ -341,10 +373,13 @@ class Clscplng(CcNotebookPage):
 
         ti_notebook.show_cc_data(cc_total_syms, target_states, open_channels)
 
-    def get_outputs(self) -> None: ...
+    def get_outputs(self) -> None:
+        """Refresh downstream outputs when CC data changes."""
 
 
 class CcBasisList:
+    """Helper widget that renders and persists close-coupling basis tables."""
+
     LABELS = ['aiM', 'viM', 'hiG', 'beS']
 
     def __init__(
@@ -364,6 +399,7 @@ class CcBasisList:
         self.create()
 
     def create(self, length: int = 1) -> None:
+        """Initialise table widgets for the configured number of rows."""
         self.mults: list[ttk.Entry] = []
         self.syms: list[ttk.Combobox] = []
         self.hidden_widgets: dict[int, list[tk.Widget]] = {}
@@ -376,15 +412,37 @@ class CcBasisList:
             self.add_sym()
 
     def p_ion_col_ind(self, ind: int, p_ion_ind: int) -> int:
+        """Return the column index for a given symmetry row and ion.
+
+        Returns
+        -------
+        int
+            Column index associated with the ion at the specified row.
+        """
         return p_ion_ind + ind * len(self.p_ions)
 
     def p_ion_grid_ind(self, ind: int, p_ion_ind: int) -> int:
+        """Return the grid index for a given symmetry row and ion.
+
+        Returns
+        -------
+        int
+            Grid row index for the ion widgets.
+        """
         return self.p_ion_col_ind(ind, p_ion_ind) + 4 * ind + 3
 
     def start_row(self, ind: int) -> int:
+        """Return the first grid row used by the specified symmetry block.
+
+        Returns
+        -------
+        int
+            Base grid row index for the block.
+        """
         return (len(self.p_ions) + 4) * ind  # 4 is the number of widgets that are always shown for each added symmetry
 
     def add_p_ion(self, p_ion: str) -> None:
+        """Add UI widgets for a new parent ion."""
         p_ion_ind = self.sorted_p_ions().index(p_ion)
 
         # If ion is not currently hidden, make space for it
@@ -423,6 +481,7 @@ class CcBasisList:
                     widget.grid(row=row + count, column=col)
 
     def remove_p_ion(self, p_ion: str) -> None:
+        """Remove widgets associated with a parent ion."""
         p_ion_ind = self.sorted_p_ions().index(p_ion)
         for ind in range(self.length):
             col_ind = self.p_ion_col_ind(ind, p_ion_ind)
@@ -438,13 +497,20 @@ class CcBasisList:
         self.lucia_states.extend(lucia_states)
 
     def add_irrep(self, irrep: list[str]) -> None:
+        """Update the list of irreps available to the selection widgets."""
         self.irrep = irrep
         for sym in self.syms:
             sym.configure(values=self.irrep)
             sym.set('')
 
     def total_syms(self) -> list[str]:
-        """Return a list of the total symmetries added to the cc basis list."""
+        """Return a list of the total symmetries added to the cc basis list.
+
+        Returns
+        -------
+        list[str]
+            Concatenated multiplicity and symmetry strings.
+        """
         return [mult.get().strip() + sym.get() for mult, sym in zip(self.mults, self.syms)]
 
     def add_sym(self) -> None:
@@ -465,6 +531,7 @@ class CcBasisList:
         self.grid(self.length - 1)
 
     def remove_sym(self, ind: int) -> None:
+        """Remove a symmetry row and tidy up associated widgets."""
         self.mults.pop(ind).destroy()
         self.syms.pop(ind).destroy()
 
@@ -533,6 +600,7 @@ class CcBasisList:
                     cell.invoke()
 
     def hide_row(self, col_ind: int, grid_ind: int) -> None:
+        """Temporarily hide a row while remembering its previous state."""
         hidden_widgets: list[tk.Widget] = []
         hidden_widgets_data: list[bool] = []
         for i in range(self.num_cols):
@@ -556,6 +624,7 @@ class CcBasisList:
         self.hidden_widgets_data[col_ind] = hidden_widgets_data
 
     def show_row(self, col_ind: int, grid_ind: int) -> None:
+        """Restore a previously hidden row."""
         for widget in self.hidden_widgets.pop(grid_ind, []):
             widget.grid()
 
@@ -592,7 +661,13 @@ class CcBasisList:
             self.check_mult(ind=ind)
 
     def sorted_p_ions(self) -> list[str]:
-        """Return a list of target ions sorted by energy."""
+        """Return a list of target ions sorted by energy.
+
+        Returns
+        -------
+        list[str]
+            Parent ions sorted by their energy ordering.
+        """
         return sorted(self.p_ions, key=self.lucia_states.index)
 
     def grid(self, ind_: int | None = None) -> None:
@@ -634,6 +709,13 @@ class CcBasisList:
         self.check_all_mults()
 
     def save(self) -> str:
+        """Serialise the CC basis table into the CLSCPLNG input format.
+
+        Returns
+        -------
+        str
+            Saved representation of the CC basis list.
+        """
         lines = []
         for i in range(self.length):
             syms = [self.syms[i].get().strip()]
@@ -671,6 +753,8 @@ class CcBasisList:
         ions_data: list[list[bool]],
         irrep: list[str],
     ) -> None:
+        """Load table data previously produced by `save`."""
+
         @dataclass
         class State:
             # Makes checking for "all" symmetry easier
@@ -736,6 +820,13 @@ class CcBasisList:
                     self.columns[col][row].invoke()
 
     def get_data(self) -> tuple[list[str], list[str], list[str], np.ndarray]:
+        """Return the current multiplicities, symmetries, ions, and selection matrix.
+
+        Returns
+        -------
+        tuple[list[str], list[str], list[str], np.ndarray]
+            Multiplicities, symmetries, parent ions, and selection mask.
+        """
         mults: list[str] = [m.get().strip() for m in self.mults]
         syms: list[str] = [s.get().strip() for s in self.syms]
         data: list[list[bool]] = []
@@ -747,6 +838,7 @@ class CcBasisList:
         return mults, syms, self.p_ions, np.array(data).T
 
     def erase(self) -> None:
+        """Remove all dynamically created widgets and reset internal structures."""
         for i in reversed(range(self.length)):
             self.remove_sym(i)
 
@@ -759,6 +851,8 @@ class CcBasisList:
 
 
 class CheckList(ttk.Treeview):
+    """Treeview that behaves like a checklist with unit conversion helpers."""
+
     AU_TO_EV = 27.211_386_245_981
     EV_TO_AU = 1 / AU_TO_EV
     ENERGY_SHIFT_COL = '#4'
@@ -780,6 +874,7 @@ class CheckList(ttk.Treeview):
             self.heading(col, command=partial(self.change_units, ind, unit))
 
     def item_click(self, event: tk.Event) -> None:
+        """Toggle a checkbox when the row text is clicked."""
         x, y = event.x, event.y
         element = self.identify('element', x, y)
         if element == 'text':
@@ -787,6 +882,7 @@ class CheckList(ttk.Treeview):
             self.toggle(iid)
 
     def double_click(self, event: tk.Event) -> None:
+        """Edit the energy shift value for the clicked row."""
         iid = self.identify_row(event.y)
         col = self.identify_column(event.x)
         if not iid or col != self.ENERGY_SHIFT_COL:  # Only works for the energy shift column
@@ -819,6 +915,7 @@ class CheckList(ttk.Treeview):
         entry.bind('<FocusOut>', lambda _e: entry.destroy())
 
     def update_relative_energies(self) -> None:
+        """Recompute the relative energy column based on current shifts."""
         first_energy = 0
         for ind, iid in enumerate(self.get_children()):
             values = list(self.item(iid, 'values'))
@@ -839,6 +936,7 @@ class CheckList(ttk.Treeview):
         self.insert('', index='end', iid=label, text=self.unchecked, values=item, open=True)
 
     def change_units(self, ind: int, units: str) -> None:
+        """Toggle between atomic units and eV for the specified column."""
         for item in self.get_children():
             values = list(self.item(item, 'values'))
 
@@ -859,14 +957,17 @@ class CheckList(ttk.Treeview):
         self.heading(col, text=heading_text, command=partial(self.change_units, ind, new_units))
 
     def get_checked(self) -> list[str]:
-        """Return a list of the target states that were selected."""
+        """Return a list of the target states that were selected.
+
+        Returns
+        -------
+        list[str]
+            Identifiers for every checked row.
+        """
         return [iid for iid in self.get_children() if self._checked(iid)]
 
     def toggle_all(self) -> None:
-        """
-        If all rows are all True, then turn them into False.
-        If not, turn them all to True.
-        """
+        """Toggle every row, flipping between all-selected and none-selected."""
         all_rows_same = True
         all_checked = self.get_checked()
         iids = self.get_children()
@@ -891,6 +992,13 @@ class CheckList(ttk.Treeview):
             self.cc_list.add_p_ion(iid)
 
     def get_energy_shifts_from_checked(self) -> list[str]:
+        """Return the energy-shift column for every selected ion.
+
+        Returns
+        -------
+        list[str]
+            Energy shift values corresponding to checked ions.
+        """
         shift_energies = []
         for iid in self.get_checked():
             values = self.item(iid, 'values')
@@ -904,6 +1012,13 @@ class CheckList(ttk.Treeview):
         return shift_energies
 
     def get_target_states(self, shift_energies: bool = True) -> np.ndarray:
+        """Return a matrix with the selected states and their energies.
+
+        Returns
+        -------
+        np.ndarray
+            Two-dimensional array containing states, energies, and relative energies.
+        """
         states: list[str] = []
         energies: list[str] = []
         relative_energies: list[str] = []
@@ -921,7 +1036,13 @@ class CheckList(ttk.Treeview):
         return np.column_stack((states, energies, relative_energies))
 
     def _checked(self, iid: str) -> bool:
-        """Return True if checkbox 'iid' is checked."""
+        """Return True if checkbox ``iid`` is checked.
+
+        Returns
+        -------
+        bool
+            True when the item is marked as checked.
+        """
         text = self.item(iid, 'text')
         return text == self.checked
 
@@ -936,6 +1057,7 @@ class CheckList(ttk.Treeview):
             self.item(iid, text=self.unchecked)
 
     def erase(self) -> None:
+        """Clear the checklist and synchronised ion state list."""
         self.p_ions.clear()
         for item in self.get_children():
             self.delete(item)

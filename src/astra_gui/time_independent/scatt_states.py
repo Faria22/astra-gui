@@ -1,3 +1,5 @@
+"""Notebook page that configures scattering-state calculations."""
+
 import bisect
 import logging
 import tkinter as tk
@@ -18,6 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 class ScattStates(TiNotebookPage):
+    """Notebook page for running scattering-state computations."""
+
     SCRIPT_FILE = Path('run_scatt_states.sh')
     SCRIPT_COMMANDS = ['astraComputeScattStates']
     DISABLED_ENTRY_TEXT = 'Disabled'
@@ -26,6 +30,7 @@ class ScattStates(TiNotebookPage):
         super().__init__(notebook, 'Scattering States')
 
     def left_screen_def(self) -> None:
+        """Create widgets for configuring the scattering-state calculation."""
         # min/max energy
         energy_frame = ttk.Frame(self.left_screen)
         energy_frame.grid(row=0, column=0, columnspan=10, sticky='w')
@@ -136,12 +141,14 @@ class ScattStates(TiNotebookPage):
         self.run_button.grid(row=8, column=0)
 
     def show_refine_option(self) -> None:
+        """Show or hide the refinement parameters based on the checkbox."""
         if self.refine_var.get():
             self.phase_frame.grid(row=4, column=0, columnspan=10, sticky='w')
         else:
             self.phase_frame.grid_forget()
 
     def change_target_states_index(self, _event: tk.Event | None = None) -> None:
+        """Update the numbering of target states based on degeneracy tolerance."""
         if (deg_tol := self.get_deg_tol(show_popup=False)) == -1:
             return
 
@@ -162,6 +169,7 @@ class ScattStates(TiNotebookPage):
 
     @staticmethod
     def toggle_entries(event: tk.Event, disable_entry: ttk.Entry) -> None:
+        """Disable the paired entry when a value is provided."""
         assert isinstance(event.widget, ttk.Entry)
 
         if event.widget.get():
@@ -172,6 +180,7 @@ class ScattStates(TiNotebookPage):
             disable_entry.delete(0, tk.END)
 
     def toggle_all_entries(self) -> None:
+        """Sync enable/disable states based on which fields contain values."""
         self.min_e_entry.config(state='normal')
         self.min_thrs_entry.config(state='normal')
         self.max_e_entry.config(state='normal')
@@ -192,6 +201,7 @@ class ScattStates(TiNotebookPage):
             self.max_e_entry.configure(state='disabled')
 
     def erase(self) -> None:
+        """Reset the form to its default state."""
         self.erase_cc_data()
 
         self.min_e_entry.config(state='normal')
@@ -214,12 +224,24 @@ class ScattStates(TiNotebookPage):
         self.ket_sym_entry.delete(0, tk.END)
 
     def get_commands(self) -> str:
+        """Assemble the command sequence for scattering-state calculations.
+
+        Returns
+        -------
+        str
+            Commands joined by newlines; empty string when validation fails.
+        """
         def find_threshold(min_e: float, max_e: float) -> tuple[int | None, ...]:
             """
             Return the lowest and highest threshold inside a given energy range.
 
             If None, None is returned, there are no thresholds in the given range.
             if -1, -1 is returned, the input is invalid.
+
+            Returns
+            -------
+            tuple[int | None, ...]
+                Tuple containing the minimum and maximum threshold indices.
 
             """
             if min_e < energies[0]:
@@ -450,6 +472,13 @@ class ScattStates(TiNotebookPage):
         return self.add_idle_thread_and_join_lines(lines)
 
     def get_deg_tol(self, show_popup: bool = True) -> float:
+        """Return the degeneracy tolerance, optionally raising validation popups.
+
+        Returns
+        -------
+        float
+            Degeneracy tolerance value, or ``-1`` when invalid.
+        """
         deg_tol = self.get_text_from_widget(self.deg_tol_entry)
         if not deg_tol:
             deg_tol = 1e-10
@@ -464,6 +493,13 @@ class ScattStates(TiNotebookPage):
             return deg_tol
 
     def get_state_energies(self) -> list[float]:
+        """Return the list of non-degenerate target-state energies.
+
+        Returns
+        -------
+        list[float]
+            Energies corresponding to unique thresholds.
+        """
         thrs = self.get_deg_tol()
         if thrs == -1:
             return []
@@ -485,6 +521,7 @@ class ScattStates(TiNotebookPage):
         return energies
 
     def load(self) -> None:
+        """Load scattering-state parameters from the saved script."""
         lines = self.get_script_lines()
 
         if not lines:
@@ -523,4 +560,5 @@ class ScattStates(TiNotebookPage):
         self.toggle_all_entries()
         self.change_target_states_index()
 
-    def get_outputs(self) -> None: ...
+    def get_outputs(self) -> None:
+        """Refresh derived outputs (not yet implemented)."""

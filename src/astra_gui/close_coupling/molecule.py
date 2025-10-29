@@ -1,3 +1,5 @@
+"""Notebook page that manages molecular geometry inputs."""
+
 import logging
 import re
 import tkinter as tk
@@ -24,6 +26,8 @@ logger = logging.getLogger(__name__)
 
 
 class Molecule(CcNotebookPage):
+    """Notebook page for specifying molecular geometry and symmetry."""
+
     MOLECULE_FILE = Path('MOLECULE.INP')
 
     def __init__(self, notebook: 'CreateCcNotebook') -> None:
@@ -100,6 +104,13 @@ class Molecule(CcNotebookPage):
         self.save_button.grid(row=9, column=0, pady=self.SAVE_BUTTON_PADY)
 
     def get_all_atoms(self) -> tuple[list[int], np.ndarray]:
+        """Return charges and coordinates for all atoms including symmetry copies.
+
+        Returns
+        -------
+        tuple[list[int], np.ndarray]
+            Atomic charges and 3D coordinates after symmetry expansion.
+        """
         atom_charges: list[int] = self.atoms_table.get()[0].astype(int).tolist()
 
         atom_centers: np.ndarray = self.atoms_table.get()[2:]
@@ -127,6 +138,13 @@ class Molecule(CcNotebookPage):
         return temp_atom_charges, temp_atom_centers
 
     def check_linear_molecule(self) -> bool:
+        """Return True when the geometry is approximately linear.
+
+        Returns
+        -------
+        bool
+            True if all atoms lie on the same line within tolerance.
+        """
         points: np.ndarray = self.get_all_atoms()[1]
 
         tolerance = 1e-4
@@ -155,6 +173,7 @@ class Molecule(CcNotebookPage):
         return True
 
     def load(self) -> None:
+        """Load molecular information from the existing input file."""
         def get_group(generators: str) -> str:
             for gen_ref in self.generators_ref_list:
                 group, gens = gen_ref.split(' ', 1)
@@ -258,6 +277,7 @@ class Molecule(CcNotebookPage):
         self.notebook.molecule_data['linear_molecule'] = self.check_linear_molecule()
 
     def save(self) -> None:
+        """Persist the molecule data and update derived metadata."""
         self.notebook.molecule_data['geom_label'] = self.get_text_from_widget(
             self.geometry_entry,
         )
@@ -307,6 +327,7 @@ class Molecule(CcNotebookPage):
         self.notebook.molecule_data['linear_molecule'] = self.check_linear_molecule()
 
     def plot_molecule(self) -> None:
+        """Render the molecule via Molden if the environment supports it."""
         if not self.ssh_client and self.controller.cur_os == 'Linux':
             messagebox.showerror(
                 'Plotting is not available!',
@@ -339,6 +360,7 @@ class Molecule(CcNotebookPage):
         Plotter(molden_lines, only_molecule=True)
 
     def set_irrep(self, group: str) -> None:
+        """Update the symmetry group and notify the rest of the application."""
         prev_sym = self.sym
 
         NotebookPage.sym = Symmetry(group)
@@ -351,6 +373,7 @@ class Molecule(CcNotebookPage):
             self.controller.print_irrep()
 
     def erase(self) -> None:
+        """Clear the molecule form fields."""
         self.geometry_entry.delete(0, tk.END)
 
         self.generators_combo.current(0)
@@ -360,8 +383,11 @@ class Molecule(CcNotebookPage):
         self.atoms_table.erase()
         self.atoms_table.create()
 
-    def get_outputs(self) -> None: ...
+    def get_outputs(self) -> None:
+        """No additional outputs are produced for the molecule page."""
 
-    def run(self) -> None: ...
+    def run(self) -> None:
+        """No runtime step; molecule data feeds other notebooks."""
 
-    def print_irrep(self, _new_sym: bool = False) -> None: ...
+    def print_irrep(self, _new_sym: bool = False) -> None:
+        """No additional UI updates required for symmetry changes."""

@@ -1,3 +1,5 @@
+"""Shared functionality for close-coupling notebook pages."""
+
 from abc import ABC
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -9,6 +11,8 @@ if TYPE_CHECKING:
 
 
 class CcNotebookPage(NotebookPage['CreateCcNotebook'], ABC):
+    """Base class for notebook pages used in close-coupling workflows."""
+
     SCRIPT_COMMANDS: list[str]
     MOLDEN_FILE = Path('QC/molden.inp')
     SCRIPT_FILE = Path('run_astra_setup.sh')
@@ -20,9 +24,11 @@ class CcNotebookPage(NotebookPage['CreateCcNotebook'], ABC):
         label: str = '',
         two_screens: bool = False,
     ) -> None:
+        """Initialize the notebook page with a label and layout configuration."""
         super().__init__(notebook, label, two_screens)
 
     def run_astra_setup(self, command: str, name: str) -> None:
+        """Execute the Astra setup script with the provided command and name."""
         if not self.path_exists(self.ASTRA_FILE):
             self.save_file(self.ASTRA_FILE, {'int_library': 'HybridIntegrals'})
 
@@ -35,6 +41,10 @@ class CcNotebookPage(NotebookPage['CreateCcNotebook'], ABC):
         )
         self.run_script(self.SCRIPT_FILE, name, self.SCRIPT_COMMANDS)
 
-    def left_screen_def(self) -> None: ...
+    def left_screen_def(self) -> None:
+        """Populate widgets that appear on the left screen."""
+        raise NotImplementedError
 
-    def right_screen_def(self) -> None: ...
+    def right_screen_def(self) -> None:
+        """Populate widgets that appear on the right screen."""
+        raise NotImplementedError

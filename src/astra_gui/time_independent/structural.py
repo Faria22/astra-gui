@@ -1,3 +1,5 @@
+"""UI logic for configuring structural time-independent calculations."""
+
 import logging
 import tkinter as tk
 from functools import partial
@@ -22,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 
 class Structural(TiNotebookPage):
+    """Notebook page that manages structural calculations and operators."""
+
     SCRIPT_FILE = Path('run_structural.sh')
     SCRIPT_COMMANDS = [
         'astraBuildOperator',
@@ -34,6 +38,7 @@ class Structural(TiNotebookPage):
         super().__init__(notebook, 'Structural', show_cap_radii=True)
 
     def left_screen_def(self) -> None:
+        """Build the primary panels used for structural inputs."""
         self.operators()
         self.dipoles()
         self.susceptibility()
@@ -43,6 +48,7 @@ class Structural(TiNotebookPage):
         self.run_button.grid(row=5, column=0)
 
     def operators(self) -> None:
+        """Lay out the operator selection widgets."""
         operators_frame = ttk.Frame(self.left_screen)
         operators_frame.grid(row=0, column=0, columnspan=10, pady=10, sticky='w')
         ttk.Label(operators_frame, text='Symmetric Operators:', font=bold_font).grid(row=0, column=0, padx=5, rowspan=2)
@@ -62,6 +68,7 @@ class Structural(TiNotebookPage):
         self.op_ket_sym_entry.grid(row=1, column=5, padx=5)
 
     def dipoles(self) -> None:
+        """Lay out the dipole selection widgets."""
         dipoles_frame = ttk.Frame(self.left_screen)
         dipoles_frame.grid(row=1, column=0, pady=10, columnspan=10, sticky='w')
         ttk.Label(dipoles_frame, text='Dipoles:', font=bold_font).grid(row=0, column=0, padx=5, rowspan=3)
@@ -94,6 +101,7 @@ class Structural(TiNotebookPage):
         self.dp_ket_sym_entry.grid(row=1, column=7, padx=5)
 
     def diag_hamiltonian(self) -> None:
+        """Build controls for diagonalising the Hamiltonian."""
         h_frame = ttk.Frame(self.left_screen)
         h_frame.grid(row=2, column=0, pady=10, columnspan=10, sticky='w')
         ttk.Label(h_frame, text='Diagonalize the Hamiltonian:', font=bold_font).grid(row=0, column=0, padx=5, rowspan=3)
@@ -148,6 +156,7 @@ class Structural(TiNotebookPage):
         self.show_h_ecs_widgets()
 
     def show_h_cap_widgets(self) -> None:
+        """Toggle the CAP panels for Hamiltonian diagonalisation."""
         if self.complex_h_var.get():
             self.h_cap_frame.grid(row=0, column=4, rowspan=3, padx=5)
 
@@ -160,12 +169,14 @@ class Structural(TiNotebookPage):
                 self.susc_cap_frame.grid(row=0, column=5, rowspan=3)
 
     def show_h_ecs_widgets(self) -> None:
+        """Toggle the ECS parameter inputs for the Hamiltonian block."""
         if self.ecs_h_var.get():
             self.h_ecs_frame.grid(row=0, column=5, rowspan=3, padx=5)
         else:
             self.h_ecs_frame.grid_forget()
 
     def susceptibility(self) -> None:
+        """Build the susceptibility block for selecting operators and options."""
         susc_frame = ttk.Frame(self.left_screen)
         susc_frame.grid(row=3, column=0, pady=10, columnspan=10, sticky='w')
         self.hover_widget(ttk.Label, susc_frame, text='Susceptibility:', font=bold_font).grid(
@@ -244,12 +255,14 @@ class Structural(TiNotebookPage):
             self.susc_kw_entries.append(e)
 
     def show_susc_cap_widgets(self) -> None:
+        """Toggle susceptibility CAP inputs depending on selected options."""
         if self.complex_susc_var.get() and not self.complex_h_var.get():
             self.susc_cap_frame.grid(row=0, column=5, rowspan=3)
         else:
             self.susc_cap_frame.grid_forget()
 
     def erase(self) -> None:
+        """Reset all structural configuration widgets."""
         self.erase_cc_data()
         self.print_irrep()
 
@@ -281,6 +294,13 @@ class Structural(TiNotebookPage):
         self.show_cap_radii([])
 
     def check_required_fields_and_files(self, operator_type: str, complex_calculation: bool = False) -> bool:
+        """Ensure prerequisites exist for the requested structural calculation.
+
+        Returns
+        -------
+        bool
+            True when all required files and options are present.
+        """
         required_files = {
             'sym_ops': ['store/log/ConvertDensityMatrics.out', 'store/log/ConvertIntegrals.out'],
             'dipoles': ['store/CloseCoupling/*_*/S'],
@@ -323,6 +343,13 @@ class Structural(TiNotebookPage):
         new_computed_syms: list[str],
         start_ind: int = 0,
     ) -> bool:
+        """Verify that dipole combinations produce previously computed symmetries.
+
+        Returns
+        -------
+        bool
+            True if all selected dipoles map to existing symmetries.
+        """
         ket_states = self.unpack_all_symmetry(ket_syms)
         for ket_state in ket_states:
             for dp_ind, dp in enumerate(dp_vars):
@@ -339,6 +366,13 @@ class Structural(TiNotebookPage):
         return True
 
     def get_commands(self) -> str:
+        """Assemble the command string for the selected structural tasks.
+
+        Returns
+        -------
+        str
+            Script content ready to be written to disk.
+        """
         lines: list[str] = []
         new_computed_syms: list[str] = []
 
@@ -507,7 +541,10 @@ class Structural(TiNotebookPage):
                                 self.h_ket_sym_entry.delete(0, tk.END)
                                 self.h_ket_sym_entry.insert(0, susc_entries[0])
 
-                                for cap_entry, cap_value in zip(self.h_cap_entries, cap_text.split(',')):
+                                for cap_entry, cap_value in zip(
+                                    self.h_cap_entries,
+                                    cap_text.split(','),
+                                ):
                                     cap_entry.delete(0, tk.END)
                                     cap_entry.insert(0, cap_value)
 
@@ -551,6 +588,13 @@ class Structural(TiNotebookPage):
         return self.add_idle_thread_and_join_lines(lines)
 
     def check_already_computed_cap_strengths(self, cap_strengths_str: str, ket_sym_str: str) -> list:
+        """Return ket symmetries whose CAP strengths still need evaluation.
+
+        Returns
+        -------
+        list
+            Symmetry labels missing the requested CAP strengths.
+        """
         ket_syms = self.unpack_all_symmetry(ket_sym_str.split(','))
 
         cap_strengths = cap_strengths_str.split(',')
@@ -567,6 +611,7 @@ class Structural(TiNotebookPage):
         return not_computed_cap_strengths_syms
 
     def load(self) -> None:
+        """Populate widgets using the saved structural script."""
         lines = self.get_script_lines()
 
         if not lines:
@@ -648,5 +693,6 @@ class Structural(TiNotebookPage):
         self.show_susc_cap_widgets()
 
     def get_outputs(self) -> None:
+        """Refresh computed symmetries and CAP strengths in the UI."""
         self.show_computed_syms()
         self.notebook.show_cap_strengths()

@@ -1,3 +1,5 @@
+"""Notebook page that configures PAD (photoelectron angular distribution) runs."""
+
 import tkinter as tk
 from pathlib import Path
 from tkinter import ttk
@@ -12,13 +14,17 @@ if TYPE_CHECKING:
 
 
 class Pad(TiNotebookPage):
+    """Configure and run PAD calculations for time-independent workflows."""
+
     SCRIPT_FILE = Path('run_pad.sh')
     SCRIPT_COMMANDS = ['astraPAD']
 
     def __init__(self, notebook: 'TimeIndependentNotebook') -> None:
+        """Initialise the PAD page and its default widgets."""
         super().__init__(notebook, 'Photoionization PT1')
 
     def left_screen_def(self) -> None:
+        """Build the controls for gauge, reference frame, and symmetry."""
         gauge_frame = ttk.Frame(self.left_screen, borderwidth=1, relief='solid')
         gauge_frame.grid(row=0, column=0, padx=5, pady=5, rowspan=3)
 
@@ -79,12 +85,14 @@ class Pad(TiNotebookPage):
         self.run_button.grid(row=5, column=0)
 
     def show_mfpad(self) -> None:
+        """Toggle the additional inputs required for molecular-frame PAD."""
         if self.mode_vars[1].get():
             self.mfpad_frame.grid(row=0, column=4, rowspan=3, padx=5, pady=5)
         else:
             self.mfpad_frame.grid_forget()
 
     def erase(self) -> None:
+        """Reset the PAD configuration widgets to their defaults."""
         self.erase_cc_data()
 
         for var in self.gauge_vars:
@@ -94,6 +102,13 @@ class Pad(TiNotebookPage):
         self.state_entry.delete(0, tk.END)
 
     def get_commands(self) -> str:
+        """Create the list of PAD commands based on current selections.
+
+        Returns
+        -------
+        str
+            Concatenated shell commands ready to run.
+        """
         if not (ket_sym := self.get_text_from_widget(self.ket_sym_entry)):
             required_field_popup('Ket symmetry')
             return ''
@@ -143,6 +158,7 @@ class Pad(TiNotebookPage):
         return self.add_idle_thread_and_join_lines(lines)
 
     def load(self) -> None:
+        """Populate the PAD form using the saved script."""
         lines = self.get_script_lines()
 
         if not lines:
@@ -170,4 +186,5 @@ class Pad(TiNotebookPage):
             else:
                 self.mode_vars[0].set(True)
 
-    def get_outputs(self) -> None: ...
+    def get_outputs(self) -> None:
+        """PAD does not expose additional outputs through the GUI yet."""

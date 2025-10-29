@@ -1,3 +1,5 @@
+"""Time-independent notebook wiring structural, scattering, and PAD pages."""
+
 import logging
 import re
 from collections import defaultdict
@@ -20,7 +22,10 @@ logger = logging.getLogger(__name__)
 
 
 class TimeIndependentNotebook(Notebook[TiNotebookPage]):
+    """Coordinate the time-independent calculation pages."""
+
     def __init__(self, parent: ttk.Frame, controller: 'Astra') -> None:
+        """Initialise the notebook and register default pages."""
         super().__init__(parent, controller, 'Run Time Independent Programs')
 
         self.reset()
@@ -28,14 +33,23 @@ class TimeIndependentNotebook(Notebook[TiNotebookPage]):
         self.add_pages([Structural, ScattStates, Pad])
 
     def erase_cc_data(self) -> None:
+        """Clear stored close-coupling data from every page."""
         for notebook_page in self.pages:
             notebook_page.erase_cc_data()
 
     def show_cap_radii(self, radii: list[str]) -> None:
+        """Propagate CAP radii values to each child page."""
         for notebook_page in self.pages:
             notebook_page.show_cap_radii(radii)
 
     def get_cap_strengths(self, group_syms: bool = True, return_float: bool = False) -> dict[str, list]:
+        """Read CAP strengths from disk and optionally group them by symmetry.
+
+        Returns
+        -------
+        dict[str, list]
+            CAP strengths grouped by symmetry label.
+        """
         cap_strengths: dict[str, list] = defaultdict(list)
 
         state_syms = self.pages[0].get_computed_syms()
@@ -91,12 +105,20 @@ class TimeIndependentNotebook(Notebook[TiNotebookPage]):
         return cap_strengths
 
     def show_cap_strengths(self) -> None:
+        """Broadcast CAP strengths to every notebook page."""
         cap_strengths = self.get_cap_strengths()
         for notebook_page in self.pages:
             notebook_page.show_cap_strengths(cap_strengths)
 
     @staticmethod
     def group_cap_strengths_by_sym(cap_strengths: dict[str, list], mult: str) -> dict[str, list]:
+        """Group CAP strengths by symmetry, consolidating shared values.
+
+        Returns
+        -------
+        dict[str, list]
+            CAP strengths reorganised by symmetry, including shared entries.
+        """
         new_cap_strengths: dict[str, list] = defaultdict(list)
 
         all_strengths = []
@@ -121,6 +143,7 @@ class TimeIndependentNotebook(Notebook[TiNotebookPage]):
         return new_cap_strengths | other_sym_strengths
 
     def show_cc_data(self, cc_syms: list[str], target_states_data: np.ndarray, open_channels: list[bool]) -> None:
+        """Update all pages with the latest close-coupling target states."""
         TiNotebookPage.cc_syms = cc_syms
         TiNotebookPage.computed_syms = self.pages[0].get_computed_syms()
 
@@ -128,6 +151,7 @@ class TimeIndependentNotebook(Notebook[TiNotebookPage]):
             notebook_page.show_cc_data(target_states_data, open_channels)
 
     def reset(self) -> None:
+        """Refresh cached close-coupling data and reset each page."""
         create_cc_notebook = cast('CreateCcNotebook', self.controller.notebooks[1])
         TiNotebookPage.cc_syms = cast(
             list[str],

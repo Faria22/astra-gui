@@ -1,3 +1,5 @@
+"""A simple status bar widget with queueing support."""
+
 import logging
 import tkinter as tk
 from tkinter import ttk
@@ -6,6 +8,8 @@ logger = logging.getLogger(__name__)
 
 
 class StatusBar(ttk.Label):
+    """Tkinter label that supports queued status messages."""
+
     def __init__(self, root: tk.Tk, default_text: str) -> None:
         super().__init__(root, text=default_text, anchor=tk.W)
 

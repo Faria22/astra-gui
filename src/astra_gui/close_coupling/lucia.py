@@ -1,3 +1,5 @@
+"""Notebook page that configures Lucia calculations and parses outputs."""
+
 import logging
 import re
 import tkinter as tk
@@ -32,6 +34,8 @@ if TYPE_CHECKING:
 
 
 class Lucia(CcNotebookPage):
+    """Notebook page responsible for running Lucia and managing its inputs."""
+
     LUCIA_FILE = Path('LUCIA.INP')
     LUCIA_SA_FILE = Path('LUCIA_SA.INP')
     SCRIPT_COMMANDS = ['lucia.x']
@@ -50,6 +54,7 @@ class Lucia(CcNotebookPage):
         self.plotter = None
 
     def left_screen_def(self) -> None:
+        """Build the widgets shown on the left-hand panel."""
         self.inact_act_orb_frame = ttk.Frame(self.left_screen)
         self.inact_act_orb_frame.grid(row=0, column=0, columnspan=10)
 
@@ -94,6 +99,7 @@ class Lucia(CcNotebookPage):
         self.run_button.grid(row=8, column=0)
 
     def middle_screen_def(self) -> None:
+        """Initialise the middle panel that controls state-averaged inputs."""
         self.middle_screen = ttk.Frame(self)
         ttk.Label(self.middle_screen, text='State Average', font=title_font).pack()
         sa_frame = ttk.Frame(self.middle_screen)
@@ -130,6 +136,7 @@ class Lucia(CcNotebookPage):
         )
 
     def right_screen_def(self) -> None:
+        """Build widgets for orbital inspection on the right-hand panel."""
         get_orbitals_button = ttk.Button(self.right_screen, text='Get Orbitals', command=self.show_dalton_output)
         get_orbitals_button.pack(padx=5, pady=5)
 
@@ -151,6 +158,7 @@ class Lucia(CcNotebookPage):
         self.orbs_tv.pack(side=tk.LEFT)
 
     def plot_orbitals(self) -> None:
+        """Launch the orbitals plotter when the required data is available."""
         if self.controller.cur_os == 'Linux':
             warning_popup(
                 """Plotting orbitals is not supported while running the GUI locally on Linux.
@@ -171,6 +179,7 @@ class Lucia(CcNotebookPage):
         self.plotter = Plotter(molden_lines, tk_root=self.controller)
 
     def show_dalton_output(self) -> None:
+        """Populate the orbitals table with results from the Dalton run."""
         if not self.path_exists(Dalton.OUTPUT_FILE):
             missing_output_popup('Dalton')
             return
@@ -199,6 +208,13 @@ class Lucia(CcNotebookPage):
             ttk.Label(self.right_screen, text=f'{label}: {" | ".join(data)} au').pack()
 
     def convert_orbital_energies(self) -> np.ndarray:
+        """Parse and sort the orbital energies returned by Dalton.
+
+        Returns
+        -------
+        np.ndarray
+            Two-column array containing orbital labels and energies.
+        """
         def sort_energies(data: np.ndarray) -> np.ndarray:
             sorted_indices = np.argsort(data[:, 1].astype(float))
             return data[sorted_indices]
@@ -225,6 +241,13 @@ class Lucia(CcNotebookPage):
         return sort_energies(np.array(parsed_data))
 
     def error_function(self) -> tuple[bool, str]:
+        """Assess whether Lucia produced valid outputs and attempt recovery.
+
+        Returns
+        -------
+        tuple[bool, str]
+            Success flag and error message describing any issues.
+        """
         def successful_calculation(file: Path) -> bool:
             content = self.read_file_content(file)
             return 'STOP  I am home from the loops' in content
@@ -291,6 +314,7 @@ class Lucia(CcNotebookPage):
                 found_widget = True
 
     def run(self) -> None:
+        """Execute Lucia or state-average calculations after verifying inputs."""
         if not self.path_exists(Dalton.OUTPUT_FILE):
             missing_required_calculation_popup('Dalton')
             return
@@ -302,7 +326,13 @@ class Lucia(CcNotebookPage):
 
     @staticmethod
     def get_states_list(states_data: np.ndarray) -> list[str]:
-        """Get list of states calculated by Lucia."""
+        """Get list of states calculated by Lucia.
+
+        Returns
+        -------
+        list[str]
+            Expanded list of state identifiers with counters.
+        """
         states_list: list[str] = []
         for state in states_data:
             states_list.extend([f'{state[1]}{state[0]}'] * int(state[-1]))
@@ -325,6 +355,13 @@ class Lucia(CcNotebookPage):
         num_states_line_ind: int,
         sa: bool = False,
     ) -> np.ndarray:
+        """Read target-state blocks from the Lucia input files.
+
+        Returns
+        -------
+        np.ndarray
+            Structured array describing states and associated metadata.
+        """
         @dataclass
         class StateCounter:
             state: np.ndarray
@@ -414,6 +451,7 @@ class Lucia(CcNotebookPage):
 
     @log_operation('loading LUCIA')
     def load(self) -> None:
+        """Populate the page with values from the LUCIA input files."""
         if not self.path_exists(self.LUCIA_FILE):
             return
 
@@ -460,6 +498,7 @@ class Lucia(CcNotebookPage):
 
     @log_operation('loading LUCIA_SA')
     def load_sa(self) -> None:
+        """Load the state-averaged configuration if it exists."""
         lines = self.read_file(self.LUCIA_SA_FILE, '*')
 
         find_line_ind = partial(self.find_line_ind, lines)
@@ -493,6 +532,7 @@ class Lucia(CcNotebookPage):
 
     @log_operation('getting lucia outputs')
     def get_outputs(self) -> None:
+        """Refresh cached energies and notify dependent pages of any changes."""
         def output_file(ind: str | int) -> Path:
             return Path(f'QC/LUCIA_BLKH_{ind}.{ind}')
 
@@ -541,7 +581,13 @@ class Lucia(CcNotebookPage):
         cc_page.show_lucia_output()
 
     def pack_all_sym(self, states_list: np.ndarray, sym_ind: int) -> np.ndarray:
-        """Convert block with all symmetries to a single line with symmetry "all"."""
+        """Convert block with all symmetries to a single line with symmetry "all".
+
+        Returns
+        -------
+        np.ndarray
+            Updated array with combined symmetry entries.
+        """
         counter: list[int] = [1]
         temp_list = [states_list[0]]
 
@@ -573,7 +619,13 @@ class Lucia(CcNotebookPage):
         return np.array(result_list)
 
     def unpack_all_sym(self, states_list: np.ndarray, sym_ind: int) -> np.ndarray:
-        """Convert "all" symmetry to all the symmetries in the group."""
+        """Convert "all" symmetry to all the symmetries in the group.
+
+        Returns
+        -------
+        np.ndarray
+            Array where each "ALL" entry is expanded into explicit irreps.
+        """
         new_list: list[np.ndarray] = []
         for row in states_list:
             if row[sym_ind] == 'ALL':
@@ -591,6 +643,13 @@ class Lucia(CcNotebookPage):
         sa: bool = False,
         active_electrons: int = 0,
     ) -> tuple[np.ndarray, str]:
+        """Return validated state table data and the serialized block for lucia.
+
+        Returns
+        -------
+        tuple[np.ndarray, str]
+            Processed state data array and serialised string representation.
+        """
         table = self.sa_states_table if sa else self.states_table
         states_data = table.get()
 
@@ -660,6 +719,13 @@ class Lucia(CcNotebookPage):
         return states_data, '\n'.join(lines)
 
     def get_inact_act(self, frame: ttk.Frame, row: int) -> list[int]:
+        """Extract inactive or active orbital indices from the provided row.
+
+        Returns
+        -------
+        list[int]
+            Orbital indices gathered from the specified row.
+        """
         orbs: list[int] = []
         for col in range(1, len(self.sym.irrep)):
             widget = cast(ttk.Entry, self.get_widget_from_grid(frame, row, col))
@@ -669,6 +735,13 @@ class Lucia(CcNotebookPage):
         return orbs
 
     def get_title(self) -> str:
+        """Build the multi-line title passed to Lucia input files.
+
+        Returns
+        -------
+        str
+            Title block describing geometry, basis, and description.
+        """
         title_lines = cast(
             list[str],
             [
@@ -681,6 +754,7 @@ class Lucia(CcNotebookPage):
         return '\n'.join(title_lines)
 
     def save(self) -> None:
+        """Validate the Lucia form and update the associated input files."""
         required_fields = [('electrons', self.electrons_entry, int)]
 
         if not (required_field_values := self.check_field_entries(required_fields)):
@@ -728,6 +802,7 @@ class Lucia(CcNotebookPage):
         self.save_file(self.LUCIA_FILE, commands, '*', blank_lines=False)
 
     def save_sa(self) -> None:
+        """Persist the state-averaged Lucia configuration to disk."""
         required_fields = [('electrons', self.sa_electrons_entry, int)]
 
         if not (required_field_values := self.check_field_entries(required_fields)):
@@ -757,6 +832,7 @@ class Lucia(CcNotebookPage):
         self.save_file(self.LUCIA_SA_FILE, commands, '*', blank_lines=False)
 
     def print_irrep(self, new_sym: bool = False) -> None:
+        """Rebuild widgets using the newly selected symmetry."""
         def remove_add_irrep(frame: ttk.Frame) -> None:
             """Remove old irrep and and new one to needed widgets in specific frame."""
             # Removes previous irrep
@@ -784,6 +860,7 @@ class Lucia(CcNotebookPage):
         self.sa_states_table.reset()
 
     def show_sa(self) -> None:
+        """Show or hide the state-average widgets and sync default values."""
         if self.sa_var.get():
             self.middle_screen.pack(side=tk.LEFT, before=self.right_screen, fill=tk.BOTH, expand=True, padx=10)
             self.sa_electrons_entry.delete(0, tk.END)
@@ -812,6 +889,7 @@ class Lucia(CcNotebookPage):
             self.middle_screen.pack_forget()
 
     def erase(self) -> None:
+        """Reset the Lucia UI and cached state."""
         self.print_irrep(new_sym=True)
 
         self.electrons_entry.delete(0, tk.END)

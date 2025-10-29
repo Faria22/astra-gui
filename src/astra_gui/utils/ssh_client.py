@@ -1,25 +1,35 @@
+"""SSH utilities for interacting with remote hosts from the GUI."""
+
 import logging
 import stat  # For checking file types (S_ISDIR)
 import tkinter as tk
 from pathlib import Path
 from tkinter import messagebox, simpledialog, ttk
 from types import TracebackType
-from typing import Optional
 
 import paramiko
-from logger_module import log_operation
+
+from .logger_module import log_operation
 
 logger = logging.getLogger(__name__)
 
 
 class SftpContext:
-    """Context manager for sftp object."""
+    """Context manager that opens and closes an SFTP session."""
 
     def __init__(self, ssh_client: paramiko.SSHClient) -> None:
+        """Store the SSH client that will be used to open SFTP sessions."""
         self._ssh_client = ssh_client
         self._stfp = None
 
     def __enter__(self) -> paramiko.SFTPClient:
+        """Open and return an SFTP client, logging failures.
+
+        Returns
+        -------
+        paramiko.SFTPClient
+            Active SFTP client opened from the stored SSH connection.
+        """
         try:
             self._sftp = self._ssh_client.open_sftp()
         except (paramiko.SSHException, OSError) as e:
@@ -31,16 +41,20 @@ class SftpContext:
 
     def __exit__(
         self,
-        _exc_type: Optional[type[BaseException]],
-        _exc: Optional[BaseException],
-        _exc_tb: Optional[TracebackType],
+        _exc_type: type[BaseException] | None,
+        _exc: BaseException | None,
+        _exc_tb: TracebackType | None,
     ) -> None:
+        """Ensure the SFTP session is closed on exit."""
         if self._sftp:
             self._sftp.close()
 
 
 class SshClient:
+    """Wrapper around Paramiko that adds GUI-friendly helpers."""
+
     def __init__(self, root: tk.Tk, input_file: Path) -> None:
+        """Create a client bound to the Tk root and optional configuration file."""
         self.root = root
         self.input_file = input_file
         self.host_name = ''
@@ -51,7 +65,14 @@ class SshClient:
 
         self.home_path = self._get_home_path()
 
-    def _get_home_path(self) -> Optional[str]:
+    def _get_home_path(self) -> str | None:
+        """Return the remote home directory path if available.
+
+        Returns
+        -------
+        Optional[str]
+            Normalised remote home directory, or ``None`` if unavailable.
+        """
         if not self.client:
             logger.error('No ssh client')
             return None
@@ -61,6 +82,7 @@ class SshClient:
             return sftp.normalize('.')
 
     def load(self) -> None:
+        """Load stored SSH settings and establish a connection."""
         if not self.input_file.is_file():
             return
 
@@ -70,6 +92,7 @@ class SshClient:
         self._ssh_setup()
 
     def save(self, host_name: str) -> None:
+        """Persist the host configuration and reconnect."""
         if not host_name:
             messagebox.showerror('Missing string!', "'Host name' was not given.")
             return
@@ -83,6 +106,7 @@ class SshClient:
 
     @log_operation('SSH setup')
     def _ssh_setup(self) -> None:
+        """Configure the SSH client using details from ~/.ssh/config."""
         ssh_config_path = Path('~/.ssh/config').expanduser()
         ssh_config = paramiko.SSHConfig()
         # Handle case where config file might not exist
@@ -150,11 +174,18 @@ class SshClient:
 
     def browse_remote(
         self,
-        initial_dir: Optional[Path] = None,
-        title: Optional[str] = None,
+        initial_dir: Path | None = None,
+        title: str | None = None,
         dirs: bool = True,
         files: bool = False,
-    ) -> Optional[str]:
+    ) -> str | None:
+        """Open a dialog for browsing the remote filesystem.
+
+        Returns
+        -------
+        Optional[str]
+            Selected remote path, or ``None`` if the dialog was cancelled.
+        """
         if not self.client:
             return None
 
@@ -179,7 +210,13 @@ class SshClient:
             return dialog.selected_path
 
     def read_from_file(self, remote_path: Path, decode: bool = True) -> str | bytes:
-        """Read the content of a text file from the remote server."""
+        """Read the content of a text file from the remote server.
+
+        Returns
+        -------
+        str | bytes
+            File contents (decoded if requested) or an empty string on failure.
+        """
         if not self.client:
             logger.error('No ssh client setuped.')
             return ''
@@ -198,18 +235,7 @@ class SshClient:
                 return content
 
     def write_to_file(self, remote_path: Path, content: str) -> None:
-        """
-        Write content to a file on the remote server. Overwrites if the file exists.
-
-        Args:
-            client: An active Paramiko SSHClient object connected to the target server.
-            remote_path: The absolute path to the file on the remote server.
-                         The parent directory must exist.
-            content: The string or bytes content to write to the file.
-                     If string, it will be encoded using the specified encoding.
-            encoding: The text encoding to use if content is a string (defaults to utf-8).
-
-        """
+        """Write `content` to the remote path, overwriting any existing file."""
         if not self.client:
             logger.error('No ssh client setuped.')
             return
@@ -223,16 +249,12 @@ class SshClient:
                 logger.error('Remote directory %s does not exist.', remote_path.parent)
 
     def path_exists(self, remote_path: Path) -> bool:
-        """
-        Check if a file or directory exists at the specified path on the remote server.
+        """Return True if the given path exists on the remote host.
 
-        Args:
-            remote_path: The absolute path to check on the remote server.
-
-        Returns:
-            True if the path exists (can be a file or directory), False otherwise
-            (including cases of permission errors preventing stat).
-
+        Returns
+        -------
+        bool
+            True when the remote path can be stat'ed successfully.
         """
         if not self.client:
             logger.error('No ssh client')
@@ -247,18 +269,12 @@ class SshClient:
                 return True
 
     def run_remote_command(self, command: str) -> tuple[str, str, int]:
-        """
-        Execute a command on the remote server via the SSH client.
+        """Execute `command` remotely and return stdout, stderr, and exit status.
 
-        Args:
-            command: The command string to execute.
-
-        Returns:
-            A tuple containing:
-                - stdout output (decoded string)
-                - stderr output (decoded string)
-                - exit status code (integer)
-
+        Returns
+        -------
+        tuple[str, str, int]
+            Decoded stdout, stderr, and exit status of the remote command.
         """
         if not self.client:
             logger.error('No ssh client.')
@@ -288,15 +304,18 @@ class SshClient:
 
 # --- Custom Remote Directory Browser ---
 class RemoteFileDialog(tk.Toplevel):
+    """Simple Tk dialog that lets the user browse directories over SFTP."""
+
     def __init__(
         self,
         parent: tk.Tk,
         sftp_client: paramiko.SFTPClient,
         initial_dir: str = '.',
-        title: Optional[str] = None,
+        title: str | None = None,
         show_dirs: bool = True,
         show_files: bool = False,
     ) -> None:
+        """Initialise the remote file dialog and populate the list view."""
         super().__init__(parent)
         self.sftp = sftp_client
         self.selected_path = None
@@ -428,7 +447,13 @@ class RemoteFileDialog(tk.Toplevel):
             logger.warning('Failed to create directory %s: %s', new_folder_path, e)
 
     def _resolve_path(self, path: str) -> str:
-        """Get absolute path using sftp.normalize."""
+        """Get absolute path using sftp.normalize.
+
+        Returns
+        -------
+        str
+            Absolute path derived from the current remote directory.
+        """
         try:
             return self.sftp.normalize(path)
         except OSError as e:
@@ -444,6 +469,7 @@ class RemoteFileDialog(tk.Toplevel):
         self.update_list()  # Refresh the listbox content
 
     def update_list(self) -> None:
+        """Refresh the list of remote entries shown in the dialog."""
         self.listbox.delete(0, tk.END)
         self.path_label.config(text=self.current_path)
         try:
@@ -478,6 +504,7 @@ class RemoteFileDialog(tk.Toplevel):
             logger.error('An unexpected error occurred during listing:\n%s', e)
 
     def go_up(self) -> None:
+        """Navigate to the parent directory if possible."""
         # Ensure we don't try to go above root ('/')
         parent_path = str(Path(self.current_path).parent)
         if parent_path != self.current_path:  # Avoid getting stuck at '/'
@@ -490,7 +517,8 @@ class RemoteFileDialog(tk.Toplevel):
             except OSError as e:
                 logger.error('Cannot navigate up:\n%s', e)
 
-    def on_double_click(self, _event: Optional[tk.Event] = None) -> None:
+    def on_double_click(self, _event: tk.Event | None = None) -> None:
+        """Handle navigation when the user double-clicks an entry."""
         selection_indices = self.listbox.curselection()
         if not selection_indices:
             return

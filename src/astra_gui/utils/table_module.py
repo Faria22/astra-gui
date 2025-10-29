@@ -1,25 +1,20 @@
+"""Reusable table widget with optional combobox support."""
+
 import logging
 import tkinter as tk
 from functools import partial
 from itertools import zip_longest
 from tkinter import ttk
-from typing import Optional
 
 import numpy as np
-from scrollable_module import ScrollableFrame
+
+from .scrollable_module import ScrollableFrame
 
 logger = logging.getLogger(__name__)
 
 
 class Table:
-    """
-    The col_types specifies if a table needs to have different types of columns ('entry' or 'combobox').
-    If only one type is needed then only a string is necessary.
-    However, if multiple types are necessary, then the user must specify a list with the type of widget for each column.
-
-    If using 'combobox' col_type, then you can also provide 'combobox_values' which is a list of values (also a list),
-    in the order that the columns appear.
-    """
+    """Render a tabular collection of entry/combobox widgets inside a frame."""
 
     # Create a type so we can check for ttk.Entry or ttk.Combobox
     ENTRY_OR_COMBO = ttk.Entry | ttk.Combobox
@@ -29,8 +24,8 @@ class Table:
         frame: ttk.Frame,
         col_labels: list[str],
         col_types: list[str] | str = 'entry',
-        combobox_values_list: Optional[list[list[str]]] = None,
-        default_values: Optional[list[str]] = None,
+        combobox_values_list: list[list[str]] | None = None,
+        default_values: list[str] | None = None,
         start_row: int = 0,
         start_col: int = 0,
         width: int = 10,
@@ -40,6 +35,7 @@ class Table:
         padx: float = 2.5,
         height: int = 300,
     ) -> None:
+        """Create a table widget with the provided configuration and defaults."""
         self.frame = frame
         if scrollable:
             scrollable_frame = ScrollableFrame(frame, height=height)
@@ -91,10 +87,12 @@ class Table:
         self.create()
 
     def reset(self) -> None:
+        """Clear all entries and recreate the table with initial rows."""
         self.erase()
         self.create()
 
     def create(self, length: int = 1) -> None:
+        """Create headers and row widgets, optionally with a fixed length."""
         for i, label in enumerate(self.col_labels):
             ttk.Label(self.frame, text=label).grid(row=self.start_row, column=self.start_col + i, padx=self.padx)
 
@@ -193,6 +191,13 @@ class Table:
         self.length = 0
 
     def get(self) -> np.ndarray:
+        """Return the current table values as a 2D NumPy array.
+
+        Returns
+        -------
+        np.ndarray
+            Array of shape ``(num_columns, num_rows)`` containing string values.
+        """
         data: list[list[str]] = [[] for _ in range(self.num_cols)]
         for i in range(self.num_cols):
             for j in range(self.length):
@@ -200,6 +205,13 @@ class Table:
         return np.array(data)
 
     def put(self, data: np.ndarray) -> None:
+        """Populate the table with the provided data array.
+
+        Parameters
+        ----------
+        data: np.ndarray
+            2D array of strings shaped ``(num_columns, num_rows)``.
+        """
         self.erase()
 
         length = len(data[0])
@@ -213,6 +225,7 @@ class Table:
         self.get()
 
     def add_combobox_values_list(self, combobox_values_list: list[list[str]]) -> None:
+        """Assign value lists to combobox columns, defaulting entries to empty lists."""
         self.combobox_values_list = []
 
         for col_type in self.col_types:
