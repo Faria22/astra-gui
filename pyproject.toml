@@ -19,9 +19,14 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = []
+dependencies = [
+    "moldenViz>=1.8",
+    "numpy>=2.3",
+    "ttkwidgets>=0.13",
+    "paramiko>=4.0",
+    "psutil>=7.1",
+]
 
 [project.urls]
 Documentation = "https://github.com/Faria22/astra-gui#readme"
