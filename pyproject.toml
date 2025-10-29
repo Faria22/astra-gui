@@ -22,7 +22,7 @@ classifiers = [
 ]
 dependencies = [
     "moldenViz>=1.8",
-    "numpy>=2.3",
+    "numpy>=2.2",
     "ttkwidgets>=0.13",
     "paramiko>=4.0",
     "psutil>=7.1",
