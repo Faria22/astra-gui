@@ -4,13 +4,13 @@ import tkinter as tk
 from abc import ABC, abstractmethod
 from pathlib import Path
 from tkinter import filedialog, ttk
-from typing import TYPE_CHECKING, Any, Optional, cast, overload
+from typing import TYPE_CHECKING, Any, cast, overload
 
 import numpy as np
-from font_module import bold_font
-from notebook_module import NotebookPage
-from popup_module import invalid_input_popup, warning_popup
-from table_module import Table
+from utils.font_module import bold_font
+from utils.notebook_module import NotebookPage
+from utils.popup_module import invalid_input_popup, warning_popup
+from utils.table_module import Table
 
 from .td_notebook_page_module import TdNotebookPage
 
@@ -905,7 +905,7 @@ class PulsePage(TdNotebookPage):
 
         self.save_button.grid(row=3, column=0, sticky='w', pady=15)
 
-    def show_sim_type_frame(self, _event: Optional[tk.Event] = None) -> None:
+    def show_sim_type_frame(self, _event: tk.Event | None = None) -> None:
         if self.sim_type_combo.get() == 'Pump-probe':
             self.pump_probe_frame.grid(row=2, column=0, columnspan=10, sticky='w')
             self.custom_pulse_frame.grid_forget()

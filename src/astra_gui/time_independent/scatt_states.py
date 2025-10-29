@@ -3,10 +3,10 @@ import logging
 import tkinter as tk
 from pathlib import Path
 from tkinter import ttk
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
-from popup_module import invalid_input_popup, missing_required_calculation_popup, required_field_popup
+from utils.popup_module import invalid_input_popup, missing_required_calculation_popup, required_field_popup
 
 from .ti_notebook_page_module import TiNotebookPage
 
@@ -262,10 +262,10 @@ class ScattStates(TiNotebookPage):
             return ''
 
         def write_intervals(
-            min_e: Optional[float] = None,
-            max_e: Optional[float] = None,
-            min_thrs: Optional[int] = None,
-            max_thrs: Optional[int] = None,
+            min_e: float | None = None,
+            max_e: float | None = None,
+            min_thrs: int | None = None,
+            max_thrs: int | None = None,
         ) -> list[str]:
             lines = []
             if (min_thrs and max_thrs) and max_thrs - min_thrs > 1:

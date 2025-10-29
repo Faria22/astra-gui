@@ -1,7 +1,8 @@
 import logging
 import sys
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
 
 class ColoredFormatter(logging.Formatter):

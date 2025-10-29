@@ -5,17 +5,17 @@ from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 from tkinter import ttk
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
-from font_module import title_font
-from popup_module import invalid_input_popup, missing_required_calculation_popup, required_field_popup
-from scrollable_module import ScrollableFrame
+from utils.font_module import title_font
+from utils.popup_module import invalid_input_popup, missing_required_calculation_popup, required_field_popup
+from utils.scrollable_module import ScrollableFrame
 
 from .cc_notebook_page_module import CcNotebookPage
 
 if TYPE_CHECKING:
-    from ti.time_independent_notebook import TimeIndependentNotebook
+    from time_independent.time_independent_notebook import TimeIndependentNotebook
 
     from .bsplines import Bsplines
     from .create_cc_notebook import CreateCcNotebook
@@ -145,7 +145,7 @@ class Clscplng(CcNotebookPage):
         self.lmax_entry.delete(0, tk.END)
         self.charge_entry.delete(0, tk.END)
 
-    def show_cc_list(self, _event: Optional[tk.Event] = None) -> None:
+    def show_cc_list(self, _event: tk.Event | None = None) -> None:
         if not self.full_basis_var.get():
             self.cc_basis_label.grid(row=3, column=0, padx=5, pady=5)
             self.cc_list_frame.grid(row=4, column=0, columnspan=10)
@@ -479,7 +479,7 @@ class CcBasisList:
             self.grid(i)
         self.remove_labels(self.length)
 
-    def remove_labels(self, ind_: Optional[int] = None) -> None:
+    def remove_labels(self, ind_: int | None = None) -> None:
         """
         Remove all labels.
 
@@ -566,7 +566,7 @@ class CcBasisList:
             if val:
                 cell.invoke()
 
-    def check_mult(self, _event: Optional[tk.Event] = None, ind: int = 0) -> None:
+    def check_mult(self, _event: tk.Event | None = None, ind: int = 0) -> None:
         """Check multiplicity in the combobox and hides the proper rows."""
         try:
             mult = int(self.mults[ind].get().strip())
@@ -595,7 +595,7 @@ class CcBasisList:
         """Return a list of target ions sorted by energy."""
         return sorted(self.p_ions, key=self.lucia_states.index)
 
-    def grid(self, ind_: Optional[int] = None) -> None:
+    def grid(self, ind_: int | None = None) -> None:
         """Print the a specific symmetry index or the whole table to the screen."""
         inds = [ind_] if ind_ is not None else list(range(self.length))
 

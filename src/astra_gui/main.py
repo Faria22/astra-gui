@@ -1,3 +1,5 @@
+"""Entry point for the ASTRA GUI application."""
+
 import argparse
 import logging
 import os
@@ -6,9 +8,9 @@ import tkinter as tk
 from pathlib import Path
 from platform import system
 from tkinter import filedialog, ttk
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from logger_module import log_operation, setup_logger
+from utils.logger_module import log_operation, setup_logger
 
 # Parse args *early* needed for setup_logger
 pre_parser = argparse.ArgumentParser(add_help=False)  # Temporary parser
@@ -21,10 +23,12 @@ logging.getLogger('paramiko').setLevel(logging.CRITICAL)
 logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
 
 # ruff: noqa: E402
-from create_cc.create_cc_notebook import CreateCcNotebook
+from close_coupling.create_cc_notebook import CreateCcNotebook
 from home_screen import HomeNotebook
-from notification_module import Notification
-from popup_module import (
+from time_dependent.time_dependent_notebook import TimeDependentNotebook
+from time_independent.time_independent_notebook import TimeIndependentNotebook
+from utils.notification_module import Notification
+from utils.popup_module import (
     NotificationHelpPopup,
     about_popup,
     create_path_popup,
@@ -32,19 +36,18 @@ from popup_module import (
     help_popup,
     overwrite_warning_popup,
 )
-from ssh_client import SshClient
-from statusbar_module import StatusBar
-from td.time_dependent_notebook import TimeDependentNotebook
-from tests.test_module import tests
-from ti.time_independent_notebook import TimeIndependentNotebook
+from utils.ssh_client import SshClient
+from utils.statusbar_module import StatusBar
 
 if TYPE_CHECKING:
-    from notebook_module import Notebook
+    from utils.notebook_module import Notebook
 
 logger = logging.getLogger(__name__)
 
 
 class Astra(tk.Tk):
+    """Main ASTRA GUI application class."""
+
     def __init__(self, args: argparse.Namespace) -> None:
         super().__init__()
 
@@ -96,31 +99,16 @@ class Astra(tk.Tk):
 
         self.show_notebook_page(args)
 
-        if not args.test:
-            return
-
-        if args.test == 'all':
-            for test_ind, test in enumerate(tests):
-                logger.info('Running test %s', test_ind)
-                test(self)
-        elif args.test:
-            if int(args.test) >= len(tests):
-                logger.error('Test index %s is out of range!', args.test)
-                return
-
-            logger.info('Running test %s', args.test)
-            tests[int(args.test)](self)
-
-        self.destroy()
-
     def get_running_dir(
         self,
         input_path: str | None,
         new_path: bool = False,
-        initial_dir: Optional[Path] = None,
-        title: Optional[str] = None,
+        initial_dir: Path | None = None,
+        title: str | None = None,
     ) -> None:
         """
+        Get the running directory for the GUI.
+
         If `new_path` is giving, prompts the user to select a new path, and `cd` to it.
         If not, just moves the GUI to {input_path} if a truey `input_path` value was given.
         """
@@ -135,11 +123,7 @@ class Astra(tk.Tk):
             directory_path = Path(input_path)
 
             # Check if path exists
-            path_exists = False
-            if self.ssh_client:
-                path_exists = self.ssh_client.path_exists(directory_path)
-            else:
-                path_exists = directory_path.exists()
+            path_exists = self.ssh_client.path_exists(directory_path) if self.ssh_client else directory_path.exists()
 
             # If path doesn't exist, prompt user to create it
             if not path_exists:
@@ -172,11 +156,12 @@ class Astra(tk.Tk):
 
             self.statusbar.show_message(f'Currect directory: {relative_path}', overwrite_default_text=True)
             self.running_directory = directory_path
-            logger.info('Changed running directory to %s', str(relative_path))
+            logger.info('Changed running directory to %s', relative_path)
             self.reload()
 
     @log_operation('getting notebooks')
     def get_notebooks(self, container: ttk.Frame) -> None:
+        """Initialize all notebooks."""
         notebook_classes = (
             HomeNotebook,
             CreateCcNotebook,
@@ -187,6 +172,7 @@ class Astra(tk.Tk):
             self.notebooks.append(notebook_class(parent=container, controller=self))
 
     def show_notebook_page(self, args: argparse.Namespace) -> None:
+        """Show the notebook page based on the runtime arguments."""
         cc_pages = [args.molecule, args.dalton, args.lucia, args.closecoupling, args.bsplines]
 
         ti_pages = [args.structural, args.scattering, args.pad]
@@ -234,6 +220,7 @@ class Astra(tk.Tk):
                 notebook.showing = False
 
     def set_gui_geometry(self) -> None:
+        """Set the GUI geometry based on the current OS."""
         if self.cur_os == 'Linux':
             self.root_geometry = (800, 750)
         elif self.cur_os == 'Windows':
@@ -260,6 +247,8 @@ class Astra(tk.Tk):
         self.geometry(f'{width}x{height}+{x}+{y}')
 
     def ssh_settings_tab(self) -> None:
+        """SSH settings tab."""
+
         def save_host_name() -> None:
             if not self.ssh_client:
                 self.ssh_client = SshClient(self, self.astra_gui_path / '.ssh_host')
@@ -284,6 +273,8 @@ class Astra(tk.Tk):
         )
 
     def notification_settings_tab(self) -> None:
+        """Notification settings tab."""
+
         @log_operation('update notification label')
         def update_label(method: str) -> None:
             if not method:
@@ -332,6 +323,7 @@ class Astra(tk.Tk):
         )
 
     def menu(self) -> None:
+        """Create the menu bar."""
         menu_bar = tk.Menu(self)
         self.config(menu=menu_bar)
 
@@ -394,6 +386,7 @@ class Astra(tk.Tk):
 
     @log_operation('copying template')
     def copy_template(self) -> None:
+        """Copy a template directory to the running directory."""
         if not self.running_directory:
             directory_popup()
             return

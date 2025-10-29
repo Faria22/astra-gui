@@ -7,10 +7,10 @@ from tkinter import ttk
 from typing import TYPE_CHECKING
 
 import numpy as np
-from font_module import bold_font
-from notebook_module import NotebookPage
-from popup_module import missing_symmetry_popup, required_field_popup
-from scrollable_module import ScrollableFrame, ScrollableTreeview
+from utils.font_module import bold_font
+from utils.notebook_module import NotebookPage
+from utils.popup_module import missing_symmetry_popup, required_field_popup
+from utils.scrollable_module import ScrollableFrame, ScrollableTreeview
 
 if TYPE_CHECKING:
     from .time_independent_notebook import TimeIndependentNotebook

@@ -5,8 +5,8 @@ from pathlib import Path
 from tkinter import ttk
 from typing import TYPE_CHECKING
 
-from font_module import bold_font
-from popup_module import (
+from utils.font_module import bold_font
+from utils.popup_module import (
     messagebox,
     missing_required_calculation_popup,
     missing_symmetry_popup,

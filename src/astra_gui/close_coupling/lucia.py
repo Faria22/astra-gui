@@ -9,17 +9,17 @@ from tkinter import ttk
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
-from font_module import title_font
-from logger_module import log_operation
 from moldenViz import Plotter
-from popup_module import (
+from utils.font_module import title_font
+from utils.logger_module import log_operation
+from utils.popup_module import (
     missing_output_popup,
     missing_required_calculation_popup,
     required_field_popup,
     warning_popup,
 )
-from scrollable_module import ScrollableTreeview
-from table_module import Table
+from utils.scrollable_module import ScrollableTreeview
+from utils.table_module import Table
 
 from .cc_notebook_page_module import CcNotebookPage
 from .dalton import Dalton
@@ -598,29 +598,30 @@ class Lucia(CcNotebookPage):
         # states_data is shape (num_columns, num_rows), so transpose to work with rows
         states_data_transposed = states_data.T
         rows_to_keep = []
-        
+
         for row_idx, row in enumerate(states_data_transposed):
             # Check if row is completely empty
             row_empty = np.all(row == '')  # noqa: PLC1901
             # Check if row is completely filled (no empty strings)
             row_filled = np.all(row != '')  # noqa: PLC1901
-            
+
             if row_empty:
                 # Skip completely empty rows (automatically remove them)
                 continue
-            elif not row_filled:
+            if not row_filled:
                 # Partially filled row - warn user
-                warning_popup('Some target state rows are partially filled. Please fill in all fields or remove the row.')
+                warning_popup(
+                    'Some target state rows are partially filled. Please fill in all fields or remove the row.',
+                )
                 return np.array([]), ''
-            else:
-                # Fully filled row - keep it
-                rows_to_keep.append(row_idx)
-        
+            # Fully filled row - keep it
+            rows_to_keep.append(row_idx)
+
         # Filter to keep only fully filled rows
         if len(rows_to_keep) == 0:
             required_field_popup('target states')
             return np.array([]), ''
-        
+
         states_data = states_data[:, rows_to_keep]
 
         sym_ind = 1 if sa else 0

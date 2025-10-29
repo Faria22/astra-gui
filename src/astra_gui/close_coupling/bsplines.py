@@ -1,12 +1,14 @@
+"""B-spline basis notebook page module."""
+
 import logging
 import tkinter as tk
 from functools import partial
 from pathlib import Path
 from tkinter import ttk
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
-from font_module import bold_font
-from popup_module import (
+from utils.font_module import bold_font
+from utils.popup_module import (
     invalid_input_popup,
     missing_required_calculation_popup,
     missing_required_file_popup,
@@ -19,7 +21,7 @@ from .clscplng import Clscplng
 from .dalton import Dalton
 
 if TYPE_CHECKING:
-    from ti.time_independent_notebook import TimeIndependentNotebook
+    from time_independent.time_independent_notebook import TimeIndependentNotebook
 
     from .create_cc_notebook import CreateCcNotebook
 
@@ -27,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 
 class Bsplines(CcNotebookPage):
+    """B-spline basis notebook page class."""
+
     BSPLINES_INPUT_FILE = Path('EXTERNAL_BASIS_BSPLINES.INP')
     SCATCI_INPUT_FILE = Path('SCATCI.INP')
     PRISM_FOLDER = Path('prism_inputs')
@@ -46,6 +50,7 @@ class Bsplines(CcNotebookPage):
         super().__init__(notebook, 'B-spline Basis', two_screens=True)
 
     def left_screen_def(self) -> None:
+        """Define the left screen of the B-splines notebook page."""
         int_lib_frame = ttk.Frame(self.left_screen)
         int_lib_frame.grid(row=0, column=0, columnspan=3)
 
@@ -105,6 +110,7 @@ class Bsplines(CcNotebookPage):
         self.run_button.grid(row=12, column=0)
 
     def right_screen_def(self) -> None:
+        """Define the right screen of the B-splines notebook page."""
         ttk.Label(self.right_screen, text='Plot Basis', font=bold_font).pack()
 
         buttons_frame = ttk.Frame(self.right_screen)
@@ -135,6 +141,7 @@ class Bsplines(CcNotebookPage):
         self.r_max_plot_entry.grid(row=2, column=2)
 
     def show_plot_parameters(self) -> None:
+        """Show or hide the plot parameters frame."""
         self.erase_plot_parameters()
         if self.plot_var.get():
             self.plot_frame.pack(pady=10)
@@ -296,7 +303,7 @@ class Bsplines(CcNotebookPage):
             generators_str = ','.join([f"'{generator}'" for generator in generators])
 
             indices = ''
-            for l in range(lmax + 1):  # noqa: E741
+            for l in range(lmax + 1):
                 indices += f'bspline_indices(1,{l}) = {l + 2},\n'
                 indices += f'bspline_indices(2,{l}) = {num_bsplines - bspline_order + 1},\n\n'
 
@@ -320,7 +327,7 @@ class Bsplines(CcNotebookPage):
         def find_line_with_equal_sign_ind(
             lines: list[str],
             string: str,
-        ) -> Optional[int]:
+        ) -> int | None:
             for ind, line in enumerate(lines):
                 if string in line and '=' in line:
                     return ind

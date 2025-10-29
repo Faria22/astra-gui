@@ -1,13 +1,17 @@
+"""The home notebook (screen) for the ASTRA GUI."""
+
 from tkinter import ttk
 from typing import TYPE_CHECKING
 
-from notebook_module import Notebook
+from utils.notebook_module import Notebook
 
 if TYPE_CHECKING:
     from main import Astra
 
 
 class HomeNotebook(Notebook):
+    """The home notebook (screen) for the ASTRA GUI."""
+
     def __init__(self, parent: ttk.Frame, controller: 'Astra') -> None:
         super().__init__(parent, controller, 'ASTRA', pack_notebook=False)
 
@@ -27,4 +31,5 @@ class HomeNotebook(Notebook):
             command=lambda: controller.show_notebook(3),
         ).pack(pady=5)
 
-    def reset(self) -> None: ...
+    def reset(self) -> None:
+        """Reset the home notebook (no action needed)."""

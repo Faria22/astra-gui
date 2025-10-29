@@ -8,12 +8,12 @@ from tkinter import messagebox, ttk
 from typing import TYPE_CHECKING
 
 import numpy as np
-from font_module import title_font
 from moldenViz import Plotter
-from notebook_module import NotebookPage
-from popup_module import required_field_popup
-from symmetry_module import Symmetry
-from table_module import Table
+from utils.font_module import title_font
+from utils.notebook_module import NotebookPage
+from utils.popup_module import required_field_popup
+from utils.symmetry_module import Symmetry
+from utils.table_module import Table
 
 from .cc_notebook_page_module import CcNotebookPage
 

@@ -1,7 +1,7 @@
 from tkinter import ttk
 from typing import TYPE_CHECKING
 
-from notebook_module import Notebook
+from utils.notebook_module import Notebook
 
 from .bsplines import Bsplines
 from .cc_notebook_page_module import CcNotebookPage
