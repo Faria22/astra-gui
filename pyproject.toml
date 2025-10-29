@@ -28,6 +28,9 @@ dependencies = [
     "psutil>=7.1",
 ]
 
+[project.optional-dependencies]
+dev = ["basedpyright>=1.31.4", "pytest>=8.4", "ruff>=0.14"]
+
 [project.urls]
 Documentation = "https://github.com/Faria22/astra-gui#readme"
 Issues = "https://github.com/Faria22/astra-gui/issues"
@@ -36,10 +39,24 @@ Source = "https://github.com/Faria22/astra-gui"
 [tool.hatch.version]
 path = "src/astra_gui/__about__.py"
 
-[tool.hatch.envs.types]
-extra-dependencies = ["mypy>=1.0.0"]
-[tool.hatch.envs.types.scripts]
-check = "mypy --install-types --non-interactive {args:src/astra_gui tests}"
+[tool.hatch.envs.default]
+dev-mode = true
+features = ["dev"]
+
+[tool.hatch.envs.default.scripts]
+lint = "ruff check {args:src tests}"
+typecheck = "basedpyright {args:src tests}"
+test = "pytest {args:tests}"
+all = ["lint", "typecheck", "test"]
+
+[tool.basedpyright]
+typeCheckingMode = "basic"
+
+[tool.hatch.build.targets.sdist]
+exclude = ["/docs"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/astra_gui"]
 
 [tool.coverage.run]
 source_pkgs = ["astra_gui", "tests"]
