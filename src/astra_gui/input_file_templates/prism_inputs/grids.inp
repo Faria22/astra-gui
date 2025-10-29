@@ -1,0 +1,7 @@
+!!!(n_grids)         ! num_grids
+!!!(grid_list)       ! grids
+.true.    ! cg modification
+70
+70
+
+!!!(grids)

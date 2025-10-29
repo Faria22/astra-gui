@@ -1,0 +1,6 @@
+BASIS
+!!!(basis)
+Label: !!!(geom_label) ! Label for the molecule/calculation
+!!!(description) ! Description of the current calculation
+Atomtypes=!!!(num_diff_atoms) Integrals=!!!(accuracy) Generators=!!!(generators) !!!(units)
+!!!(atoms_data)

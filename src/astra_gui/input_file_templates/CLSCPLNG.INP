@@ -1,0 +1,54 @@
+###########################################################
+### Close-coupling (CC) basis configuration input file. ###
+###########################################################
+
+# If 'TRUE', for every irreducible representation of the point group, all the ions declared below in
+# the PARENT_ION_LIST will be included in the CC expansion and will be coupled with all the available
+# numerical functions for the extra electron, up to the maximum angular momentum set in LMAX.
+#
+# If 'FALSE', it's required to provide the explicit CC basis expansion, only those irreducible representations of the molecule to be ionized, set below all the variables declaration will be available in the calculation, and within each symmetry, the ions of interest and the coupled one electron functions must be indicated.
+#
+USE_FULL_BASIS = ###(full_basis)
+
+# Point group symmetry of the molecule.
+Group = ###(group)
+
+# Maximum angular momentum to be considered for the outer electron.
+LMAX = ###(lmax)
+
+# Charge of the ionized system.
+PARENT_ION_CHARGE = ###(charge)
+
+# Energy shifts of the parent ions
+###(energy_shifts)
+
+# Total number of electrons of the ionized system.
+NELECTRONS = ###(electrons)
+
+# The list of ions that will be availble for inclusion into the CC basis: <2S+1><Irrep>.<State index>.
+# The way they are sorted does not matter.
+#
+PARENT_ION_LIST = ###(ion_list)
+
+# Reference configuration used in DALTON
+N_REF_OCCUPIED = ###(occupied)
+
+# If USE_FULL_BASIS = TRUE, everything below will be ignored because ASTRA will build the whole CC basis.
+# If USE_FULL_BASIS = FALSE, then CC basis defined below is required.
+#
+#
+#Total symmetry: [<2S+1><Irrep>]
+
+#  <2S_ion+1><Irrep_ion>.<State index> (1-electron basis)
+# The 1-electron basis encompasses the following kind of functions:
+# aiM: active internal molecular orbitals, typically those orbitals declared in the LUCIA's input file.
+# viM: virtual internal molecular orbitals, virtual molecular orbitals, typically gaussians that could be
+#      added to the GBTOlib input file. Not tested yet, so the viM block will be empty in most cases.
+# hiM: hybrid internal orbitals, those internal B-splines defined in the GBTOlib input file that do
+#      overlap with aiM and viM if there are.
+# beS: external numerical functions, at the moment B-splines, defined in the external basis input file.
+#      If beS:ALL_XLM is used, then all the external B-splines with an angular momentum up to LMAX will
+#      be included. The alternative would be to include only those l,m pairs of interest,
+#      i.e.: beS: 0 0, 2 -1, 2 2, 3 2
+
+###(cc_list)

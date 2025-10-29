@@ -1,0 +1,27 @@
+# GUI INFO: pump-probe pulses
+
+# 1. Name of the pulse (string).
+# 2. Functon kind for the pulse envelope: either 'G' for Gaussian or 'C' for cosine^2 (string).
+# 3. Pulse central time in a.u. (real).
+# 4. Pulse central frequency in a.u. (real).
+# 5. Full width at the half maximum (FWHM) in number of oscillation periods (integer).
+# 6. Carrier envelope phase (CEP) in degrees (real).
+# 7. Pulse intensity in PW/cm^2 (real).
+# 8. Zenith angle theta [0,180] in degrees for the polarization direction (real).
+# 9. Azimuthal angle phi [0,360] in degrees for the polarization direction (real).
+
+#[PulseName]{( G  t_0  w_c  FWHM  CEP  Intensity  Theta  Phi );}
+
+# To simulate the action of the resultant pulse after adding multiple pulses, it can be done by defining a new total pulse
+#[APT]{Pulse1;Pulse2;}
+
+# Pump pulses
+###(pump_pulses)
+
+# Pump Train
+###(pump_train)
+
+# Probe pulses
+###(pump_probe_pulses)
+
+###(execute)

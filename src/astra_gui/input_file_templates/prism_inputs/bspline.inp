@@ -1,0 +1,10 @@
+BS_ORDER
+###(order)
+BS_NNODS
+###(n_nodes)
+BS_LMAX
+###(lmax)
+BS_GRMIN
+0.0
+BS_GRMAX
+###(r_max)

@@ -1,0 +1,48 @@
+* A title for the calculation, the next 3 lines below the keyword 'Title' are just to give
+* some context to the calculation for the user.
+Title
+***(title)
+*
+* Keyword to generate a new molden file with the optimized orbitals after the state-averaged calculation.
+WRMOLD
+*
+* Point group symmetry of the molecule.
+Pntgrp
+***(group)
+*
+* Environment is DALTON. MOLCAS would not work as of now.
+ENV=DA
+*
+* Inactive orbitals per symmetry, following the DALTON's convention.
+Inash
+***(inactive)
+*
+* General active space: number of GAS and number of active orbitals per symmetry, per GAS
+GASSH
+1
+***(active)
+*
+SECSHL
+Rest
+*
+MS2
+***(ms2)
+* Number of active electrons.
+nActEl
+***(electrons)
+GASSPC * The same number of active electrons are repeated twice.
+1
+***(electrons) ***(electrons)
+*
+*
+* Multi-configurational self-consistent field calculation keyword.
+* State-average definition of the states.
+** Number of lines in the definition of the states.
+** List of states by indicating: weight, symmetry, multiplicity, # active electrons, twice the spin projection.
+Sequen
+1
+MCSCF
+ST_AVE
+***(st_ave_states)
+*
+END OF

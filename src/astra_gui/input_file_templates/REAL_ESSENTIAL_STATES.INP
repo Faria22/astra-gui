@@ -1,0 +1,39 @@
+# Indicates what states will be considered for the real Hamiltonian
+# essential states basis.
+#
+# Symmetry
+# Number of energy intervals (0 if none)
+# Minimum energy   Maximum energy  for first interval 
+# Minimum energy   Maximum energy  for second interval 
+#.
+#.
+#.
+
+1Ag
+           1
+   -79.0    -77.1
+
+1B1g
+           0
+
+1B2g
+           2
+   -79.0    -78.13
+   -77.88   -77.1
+
+1B3g
+           0
+
+1Au
+           0
+
+1B1u
+           0
+
+1B2u
+           0
+
+1B3u
+           1
+   -79.0    -77.1
+

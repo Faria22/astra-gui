@@ -1,0 +1,65 @@
+##################################
+### External basis input file. ###
+##################################
+
+# Kind of functions that will be used for the external basis expansion. At the moment only B-splines.
+BasisKind = BSPLINE
+
+# Subdirectory inside the main storage directory in which the relevant external basis information will be stored.
+BasisDir = basis
+
+# Number of nodes to build the external functions grid.
+#    If Method = InnerGrid, then NumberNodes is ignored and the nodes grid will be built following the
+# same node separation defined in the GBTOlib input file (SCATCI.INP), doing the propper matching with the
+# inner B-splines and placing the last node position as close as possible to Rmax.
+#
+#    If Method = UniformGrid, then using NumberNodes and Rmax, am equidistand grid of nodes is built, doing the
+# matching with the inner B-splines. If the resultant node separation for the external B-splines is too different
+# from the one used for the internal B-splines, the wave function representation might be compromised. In that case
+# it would be better to use the 'File' method.
+#
+#    If Method = File, then the first NumberNodes values will be taken from the list defined at the end of the
+# file, and with these values will define the nodes grid, ignoring Rmax. If the first value in the list is lower
+# than the last node position for the inner B-splines, ASTRA will stop the execution and will print a message
+# addressing this fact, the user to modify the list. If the first value in the list is too far from the last
+# node position for the inner B-splines, then the wave function representation might be compromissed around that
+# point. In order to avoid this it is advisable to start the list at a distance comparable with the inner nodes
+# separation, from the last inner node, and from that point on, to make a smooth transition to the external
+# nodes separation of interest.
+#
+
+NumberNodes = 1000 # This is ignored by the program, but needs to be present for now
+# External box size, actual box size for the whole ASTRA's one-electron basis. It's the position at which the last
+# node will be placed. See the comments for 'NumberNodes' for more information.
+Rmax = ###(r_max)
+
+# The method by which the external nodes grid will be generated. See the comments for 'NumberNodes' for more information.
+Method = InnerGrid
+#Method = UniformGrid
+#Method = File
+
+
+# The plotting parameters are optional. This plot has not been implemented yet.
+#
+# If true (T) ASTRA plots the external basis and the B-splines in the inner region that overlap with it.
+PlotBasis = ###(plot_basis)
+# Number of grid points to plot the B-splines.
+Nplot = ###(n_plot)
+# Minimum distance to plot the B-splines.
+RPlotMin = ###(r_plot_min)
+# Maximum distance to plot the B-splines.
+RPlotMax = ###(r_plot_max)
+
+
+# Complex absorber potential (CAP) parameters.
+#
+# Distance at which the CAP will start. At most two CAP radius can be defined separated by ",".
+CAPRadius = ###(cap_radii)
+# Exponent of the CAP.
+CAPExponent = 2.0
+
+# Mask function for the TDSE, a normal cummulative distribution.
+# Distance at which the cimmulative distribution is 0.5
+MASKRadius = ###(mask_radius)
+# Width of the distributions
+MASKWidth = ###(mask_width)

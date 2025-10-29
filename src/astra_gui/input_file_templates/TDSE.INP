@@ -1,0 +1,45 @@
+# Name of the Pulses input file.
+Ext_Field_File       = ###(pulse_filename)
+
+# Set of specific input files generated for the real Hamiltonian basis TDSE.
+Energies_File        = ###(structure_dir)/Energies.dat
+Symmetries_File      = ###(structure_dir)/Symmetries.dat
+Dipole_X_File        = ###(structure_dir)/X.dat
+Dipole_Y_File        = ###(structure_dir)/Y.dat
+Dipole_Z_File        = ###(structure_dir)/Z.dat
+Mask_Spectrum_File   = ###(structure_dir)/MASK.dat_Spectrum
+CAP1_Spectrum_File   = ###(structure_dir)/CAP1.dat_Spectrum
+CAP2_Spectrum_File   = ###(structure_dir)/CAP2.dat_Spectrum
+
+
+# Intervals of time in which the Mask will not be applied to the wavefunction.
+Mask_Free_Time_Interval = 50.0
+
+
+# If true, the dipole operator will b expanded in the essential states basis.
+Use_Essential_States = T
+
+# The initial time for the simulation in a.u.
+Initial_Time         = ###(initial_time)
+
+# The final time for the simulation in a.u.
+Final_Time           = ###(final_time)
+
+# The time for which all the pulses can be considered to be over in a.u., just free propagation afterwards.
+Final_Time_Pulse     = ###(final_pulse_time)
+
+# Time step for the numerical time propagation in a.u.
+Time_Step            = ###(time_step)
+
+# Time step (a.u.) for which the time-dependent wave function will be saved.
+Save_Time_Interval   = ###(save_time_step)
+
+# Tolerance for the wave function norm value error. It's supposed to be 1 throuout the simulation.
+Norm_Limit           = 1.d-6
+
+# Set of parameters for the general TDSE that are not being used yet.
+Res_Limit            = 1.d-10
+Min_Num_Iter         = 1
+Max_Num_Iter         = 20
+Use_Instate_File     = F
+Instate_File         = Psi_

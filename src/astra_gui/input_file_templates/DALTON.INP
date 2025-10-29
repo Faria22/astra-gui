@@ -1,0 +1,23 @@
+**DALTON INPUT
+.RUN WAVE FUNCTION
+.INTEGRALS
+.PROPERTIES
+.RUN PROPERTIES
+.RUN ALL
+**INTEGRALS
+.ANGMOM
+**WAVE FUNCTIONS
+.HF
+*SCF INPUT
+!!!(singly)
+!!!(doubly)
+*CONFIGURATION INPUT
+.SPIN MULTIPLICITY
+!!!(multiplicity)
+! Symmetry in the order defined by Dalton
+! e.g.: 2 in C2V would be B1
+.SYMMETRY
+!!!(symmetry)
+.ELECTRONS
+!!!(electrons)
+**END OF INPUT
