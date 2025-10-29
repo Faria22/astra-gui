@@ -3,13 +3,13 @@
 from tkinter import ttk
 from typing import TYPE_CHECKING
 
-from utils.notebook_module import Notebook
+from astra_gui.utils.notebook_module import Notebook
 
 from .pulse import PulsePage
 from .td_notebook_page_module import TdNotebookPage
 
 if TYPE_CHECKING:
-    from main import Astra
+    from astra_gui.main import Astra
 
 
 class TimeDependentNotebook(Notebook[TdNotebookPage]):

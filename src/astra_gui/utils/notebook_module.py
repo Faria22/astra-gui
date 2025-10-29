@@ -33,7 +33,7 @@ from .symmetry_module import Symmetry
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from main import Astra
+    from astra_gui.main import Astra
 
 NbP = TypeVar('NbP', bound='NotebookPage')
 Nb = TypeVar('Nb', bound='Notebook')

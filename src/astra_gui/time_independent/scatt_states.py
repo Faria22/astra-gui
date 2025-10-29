@@ -8,7 +8,8 @@ from tkinter import ttk
 from typing import TYPE_CHECKING
 
 import numpy as np
-from utils.popup_module import invalid_input_popup, missing_required_calculation_popup, required_field_popup
+
+from astra_gui.utils.popup_module import invalid_input_popup, missing_required_calculation_popup, required_field_popup
 
 from .ti_notebook_page_module import TiNotebookPage
 

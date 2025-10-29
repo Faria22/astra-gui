@@ -3,10 +3,10 @@
 from tkinter import ttk
 from typing import TYPE_CHECKING
 
-from utils.notebook_module import Notebook
+from astra_gui.utils.notebook_module import Notebook
 
 if TYPE_CHECKING:
-    from main import Astra
+    from astra_gui.main import Astra
 
 
 class HomeNotebook(Notebook):

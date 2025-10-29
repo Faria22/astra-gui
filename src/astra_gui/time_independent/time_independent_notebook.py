@@ -7,7 +7,8 @@ from tkinter import ttk
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
-from utils.notebook_module import Notebook
+
+from astra_gui.utils.notebook_module import Notebook
 
 from .pad import Pad
 from .scatt_states import ScattStates
@@ -15,8 +16,8 @@ from .structural import Structural
 from .ti_notebook_page_module import TiNotebookPage
 
 if TYPE_CHECKING:
-    from close_coupling.create_cc_notebook import CreateCcNotebook
-    from main import Astra
+    from astra_gui.close_coupling.create_cc_notebook import CreateCcNotebook
+    from astra_gui.main import Astra
 
 logger = logging.getLogger(__name__)
 

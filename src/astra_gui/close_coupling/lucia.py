@@ -12,16 +12,17 @@ from typing import TYPE_CHECKING, cast
 
 import numpy as np
 from moldenViz import Plotter
-from utils.font_module import title_font
-from utils.logger_module import log_operation
-from utils.popup_module import (
+
+from astra_gui.utils.font_module import title_font
+from astra_gui.utils.logger_module import log_operation
+from astra_gui.utils.popup_module import (
     missing_output_popup,
     missing_required_calculation_popup,
     required_field_popup,
     warning_popup,
 )
-from utils.scrollable_module import ScrollableTreeview
-from utils.table_module import Table
+from astra_gui.utils.scrollable_module import ScrollableTreeview
+from astra_gui.utils.table_module import Table
 
 from .cc_notebook_page_module import CcNotebookPage
 from .dalton import Dalton

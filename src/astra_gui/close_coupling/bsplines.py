@@ -7,8 +7,8 @@ from pathlib import Path
 from tkinter import ttk
 from typing import TYPE_CHECKING, cast
 
-from utils.font_module import bold_font
-from utils.popup_module import (
+from astra_gui.utils.font_module import bold_font
+from astra_gui.utils.popup_module import (
     invalid_input_popup,
     missing_required_calculation_popup,
     missing_required_file_popup,
@@ -21,7 +21,7 @@ from .clscplng import Clscplng
 from .dalton import Dalton
 
 if TYPE_CHECKING:
-    from time_independent.time_independent_notebook import TimeIndependentNotebook
+    from astra_gui.time_independent.time_independent_notebook import TimeIndependentNotebook
 
     from .create_cc_notebook import CreateCcNotebook
 
