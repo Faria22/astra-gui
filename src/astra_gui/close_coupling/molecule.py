@@ -112,10 +112,10 @@ class Molecule(CcNotebookPage):
         tuple[list[int], np.ndarray]
             Atomic charges and 3D coordinates after symmetry expansion.
         """
-        atom_charges: list[int] = self.atoms_table.get()[0].astype(int).tolist()
+        atom_charges = self.atoms_table.get()[0].astype(int)
 
-        atom_centers: np.ndarray = self.atoms_table.get()[2:]
-        atom_centers = np.where(atom_centers == '', '0.0', atom_centers).T.astype(float)  # noqa: PLC1901
+        atom_centers = self.atoms_table.get()[2:]
+        atom_centers = np.where(atom_centers, atom_centers, '0.0').T.astype(float)
 
         temp_atom_charges = atom_charges.copy()
         temp_atom_centers = atom_centers.copy()
@@ -146,15 +146,19 @@ class Molecule(CcNotebookPage):
         bool
             True if all atoms lie on the same line within tolerance.
         """
-        points: np.ndarray = self.get_all_atoms()[1]
-
         tolerance = 1e-4
+
+        points: np.ndarray = self.get_all_atoms()[1]
         if len(points) < 2:  # noqa: PLR2004
             return True  # Two points always define a line
 
         # Define the direction vector from the first two points
         direction = points[1] - points[0]
-        direction /= np.linalg.norm(direction)  # Normalize the direction vector
+        norm = np.linalg.norm(direction)
+        if norm == 0:
+            raise ValueError('The first two atoms cannot be at the same position.')
+
+        direction /= norm  # Normalize the direction vector
 
         # Check the distance of each subsequent point to the line
         for i in range(2, len(points)):
@@ -302,9 +306,12 @@ class Molecule(CcNotebookPage):
             return
 
         diff_atoms_count = list(Counter(atoms_table_data[0]).values())
-        logger.debug('Different atoms count: %s', diff_atoms_count)
 
         self.notebook.molecule_data['num_diff_atoms'] = len(diff_atoms_count)
+
+        # sort atoms by atomic number
+        sorted_indices = np.argsort(atoms_table_data[0].astype(int))
+        atoms_table_data = atoms_table_data[:, sorted_indices]
 
         atoms_data_string = ''
         ind = 0
@@ -359,7 +366,7 @@ class Molecule(CcNotebookPage):
             '[MO]',
         ]
 
-        Plotter(molden_lines, only_molecule=True)
+        Plotter(molden_lines, only_molecule=True, tk_root=self.controller)
 
     def set_irrep(self, group: str) -> None:
         """Update the symmetry group and notify the rest of the application."""
