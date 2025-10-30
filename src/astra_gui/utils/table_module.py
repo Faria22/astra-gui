@@ -198,11 +198,11 @@ class Table:
         np.ndarray
             Array of shape ``(num_columns, num_rows)`` containing string values.
         """
-        data: list[list[str]] = [[] for _ in range(self.num_cols)]
+        data = np.empty((self.num_cols, self.length), dtype=str)
         for i in range(self.num_cols):
             for j in range(self.length):
-                data[i].append(self.columns[i][j].get())
-        return np.array(data)
+                data[i, j] = self.columns[i][j].get()
+        return data
 
     def put(self, data: np.ndarray) -> None:
         """Populate the table with the provided data array.
