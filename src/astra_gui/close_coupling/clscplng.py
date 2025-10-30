@@ -10,10 +10,9 @@ from tkinter import ttk
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
-
-from astra_gui.utils.font_module import title_font
-from astra_gui.utils.popup_module import invalid_input_popup, missing_required_calculation_popup, required_field_popup
-from astra_gui.utils.scrollable_module import ScrollableFrame
+from utils.font_module import title_font
+from utils.popup_module import invalid_input_popup, missing_required_calculation_popup, required_field_popup
+from utils.scrollable_module import ScrollableFrame
 
 from .cc_notebook_page_module import CcNotebookPage
 

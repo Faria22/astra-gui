@@ -8,8 +8,7 @@ from tkinter import ttk
 from typing import TYPE_CHECKING
 
 import numpy as np
-
-from astra_gui.utils.popup_module import invalid_input_popup, missing_required_calculation_popup, required_field_popup
+from utils.popup_module import invalid_input_popup, missing_required_calculation_popup, required_field_popup
 
 from .ti_notebook_page_module import TiNotebookPage
 
@@ -232,6 +231,7 @@ class ScattStates(TiNotebookPage):
         str
             Commands joined by newlines; empty string when validation fails.
         """
+
         def find_threshold(min_e: float, max_e: float) -> tuple[int | None, ...]:
             """
             Return the lowest and highest threshold inside a given energy range.

@@ -9,11 +9,10 @@ from tkinter import filedialog, ttk
 from typing import TYPE_CHECKING, Any, cast, overload
 
 import numpy as np
-
-from astra_gui.utils.font_module import bold_font
-from astra_gui.utils.notebook_module import NotebookPage
-from astra_gui.utils.popup_module import invalid_input_popup, warning_popup
-from astra_gui.utils.table_module import Table
+from utils.font_module import bold_font
+from utils.notebook_module import NotebookPage
+from utils.popup_module import invalid_input_popup, warning_popup
+from utils.table_module import Table
 
 from .td_notebook_page_module import TdNotebookPage
 
@@ -181,10 +180,7 @@ class Pulse:
         times = np.arange(initial_time, final_time + dt, dt)
         pulse_values = self.eval_pulse(times)
 
-        lines = [
-            f'{t} {pulse_value}'
-            for t, pulse_value in zip(times, pulse_values)
-        ]
+        lines = [f'{t} {pulse_value}' for t, pulse_value in zip(times, pulse_values)]
 
         return '\n'.join(lines)
 
@@ -958,6 +954,7 @@ class CustomPulseFrame(PulseParameterFrame):
         tuple[str, str, str, str, str]
             Initial time, final time, final pulse time, time step, and save interval.
         """
+
         def extract_value(line: str) -> str:
             return line.split('=')[1].strip()
 

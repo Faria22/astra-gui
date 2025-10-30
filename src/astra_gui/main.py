@@ -4,14 +4,13 @@ import argparse
 import logging
 import os
 import shutil
-import sys
 import tkinter as tk
 from pathlib import Path
 from platform import system
 from tkinter import filedialog, ttk
 from typing import TYPE_CHECKING
 
-from astra_gui.utils.logger_module import log_operation, setup_logger
+from utils.logger_module import log_operation, setup_logger
 
 # Parse args *early* needed for setup_logger
 pre_parser = argparse.ArgumentParser(add_help=False)  # Temporary parser
@@ -24,12 +23,12 @@ logging.getLogger('paramiko').setLevel(logging.CRITICAL)
 logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
 
 # ruff: noqa: E402
-from astra_gui.close_coupling.create_cc_notebook import CreateCcNotebook
-from astra_gui.home_screen import HomeNotebook
-from astra_gui.time_dependent.time_dependent_notebook import TimeDependentNotebook
-from astra_gui.time_independent.time_independent_notebook import TimeIndependentNotebook
-from astra_gui.utils.notification_module import Notification
-from astra_gui.utils.popup_module import (
+from close_coupling.create_cc_notebook import CreateCcNotebook
+from home_screen import HomeNotebook
+from time_dependent.time_dependent_notebook import TimeDependentNotebook
+from time_independent.time_independent_notebook import TimeIndependentNotebook
+from utils.notification_module import Notification
+from utils.popup_module import (
     NotificationHelpPopup,
     about_popup,
     create_path_popup,
@@ -37,11 +36,11 @@ from astra_gui.utils.popup_module import (
     help_popup,
     overwrite_warning_popup,
 )
-from astra_gui.utils.ssh_client import SshClient
-from astra_gui.utils.statusbar_module import StatusBar
+from utils.ssh_client import SshClient
+from utils.statusbar_module import StatusBar
 
 if TYPE_CHECKING:
-    from astra_gui.utils.notebook_module import Notebook
+    from utils.notebook_module import Notebook
 
 logger = logging.getLogger(__name__)
 
@@ -60,13 +59,7 @@ class Astra(tk.Tk):
 
         self.minsize(self.root_geometry[0], self.root_geometry[1])
 
-        # Checks if astra_dir and astra_gui_dir is set
-        astra_gui_path = os.getenv('ASTRA_GUI_DIR', '')
-        if not astra_gui_path:
-            logger.critical('Did not find enviroment variable "ASTRA_GUI_DIR"')
-            sys.exit(1)
-
-        self.astra_gui_path = Path(astra_gui_path)
+        self.astra_gui_path = Path(__file__).parent.resolve()
 
         self.notification = Notification(self.astra_gui_path / '.notification')
 
@@ -356,7 +349,7 @@ class Astra(tk.Tk):
         help_menu.add_command(label='Help', command=help_popup)
         help_menu.add_command(label='About', command=about_popup)
 
-        with (self.astra_gui_path / 'README_NOTIFICATION.md').open('r') as f:
+        with (self.astra_gui_path / 'help_messages' / 'notification.md').open('r') as f:
             content = f.read()
         help_menu.add_command(label='Notification methods', command=lambda: NotificationHelpPopup(content))
 

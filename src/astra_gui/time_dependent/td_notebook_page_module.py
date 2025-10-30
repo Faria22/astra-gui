@@ -3,7 +3,7 @@
 import logging
 from typing import TYPE_CHECKING
 
-from astra_gui.utils.notebook_module import NotebookPage
+from utils.notebook_module import NotebookPage
 
 if TYPE_CHECKING:
     from .time_dependent_notebook import TimeDependentNotebook

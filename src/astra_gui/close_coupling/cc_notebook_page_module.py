@@ -4,7 +4,7 @@ from abc import ABC
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from astra_gui.utils.notebook_module import NotebookPage
+from utils.notebook_module import NotebookPage
 
 if TYPE_CHECKING:
     from .create_cc_notebook import CreateCcNotebook

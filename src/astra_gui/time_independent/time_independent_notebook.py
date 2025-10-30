@@ -7,8 +7,7 @@ from tkinter import ttk
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
-
-from astra_gui.utils.notebook_module import Notebook
+from utils.notebook_module import Notebook
 
 from .pad import Pad
 from .scatt_states import ScattStates

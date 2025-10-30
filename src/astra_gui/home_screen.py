@@ -3,7 +3,7 @@
 from tkinter import ttk
 from typing import TYPE_CHECKING
 
-from astra_gui.utils.notebook_module import Notebook
+from utils.notebook_module import Notebook
 
 if TYPE_CHECKING:
     from astra_gui.main import Astra
