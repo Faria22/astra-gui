@@ -494,7 +494,7 @@ class Structural(TiNotebookPage):
 
         # Dipole transitions and susceptibility
         susc_dp_vals = [susc_dp.get() for susc_dp in self.susc_dp_vars]
-        susc_real_complex = [var.get() for var in [self.real_susc_var, self.real_susc_var]]
+        susc_real_complex = [var.get() for var in [self.real_susc_var, self.complex_susc_var]]
         susc_entries = [self.get_text_from_widget(e) for e in self.susc_kw_entries]
 
         if any(susc_real_complex) or any(susc_dp_vals):
@@ -517,6 +517,7 @@ class Structural(TiNotebookPage):
             if not check_ket_sym(susc_entries[0], 'Susceptibility'):
                 return ''
 
+            # TODO: Refactor this to only use one variable in the for loop
             for real_complex, cap in zip(susc_real_complex, [False, True]):
                 if not real_complex:
                     continue
