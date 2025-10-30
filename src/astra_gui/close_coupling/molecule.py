@@ -138,7 +138,7 @@ class Molecule(CcNotebookPage):
 
         return temp_atom_charges, temp_atom_centers
 
-    def check_linear_molecule(self) -> bool:
+    def is_molecule_linear(self) -> bool:
         """Return True when the geometry is approximately linear.
 
         Returns
@@ -175,6 +175,7 @@ class Molecule(CcNotebookPage):
 
     def load(self) -> None:
         """Load molecular information from the existing input file."""
+
         def get_group(generators: str) -> str:
             for gen_ref in self.generators_ref_list:
                 group, gens = gen_ref.split(' ', 1)
@@ -275,7 +276,7 @@ class Molecule(CcNotebookPage):
 
         self.notebook.molecule_data['num_diff_atoms'] = num_diff_atoms
         self.notebook.molecule_data['number_atoms'] = np.shape(self.get_all_atoms()[1])[0]
-        self.notebook.molecule_data['linear_molecule'] = self.check_linear_molecule()
+        self.notebook.molecule_data['linear_molecule'] = self.is_molecule_linear()
 
     def save(self) -> None:
         """Persist the molecule data and update derived metadata."""
@@ -296,13 +297,13 @@ class Molecule(CcNotebookPage):
 
         atoms_table_data = self.atoms_table.get()
 
-        # if not np.any(atoms_table_data):
-        # ***
-        if atoms_table_data.size == 0:
+        if not np.any(atoms_table_data):
             required_field_popup('atoms list')
             return
 
         diff_atoms_count = list(Counter(atoms_table_data[0]).values())
+        logger.debug('Different atoms count: %s', diff_atoms_count)
+
         self.notebook.molecule_data['num_diff_atoms'] = len(diff_atoms_count)
 
         atoms_data_string = ''
@@ -325,7 +326,7 @@ class Molecule(CcNotebookPage):
             blank_lines=False,
         )
         self.notebook.molecule_data['number_atoms'] = np.shape(self.get_all_atoms()[1])[0]
-        self.notebook.molecule_data['linear_molecule'] = self.check_linear_molecule()
+        self.notebook.molecule_data['linear_molecule'] = self.is_molecule_linear()
 
     def plot_molecule(self) -> None:
         """Render the molecule via Molden if the environment supports it."""
