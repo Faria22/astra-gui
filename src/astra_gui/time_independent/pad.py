@@ -5,7 +5,7 @@ from pathlib import Path
 from tkinter import ttk
 from typing import TYPE_CHECKING
 
-from utils.popup_module import missing_required_calculation_popup, required_field_popup
+from astra_gui.utils.popup_module import missing_required_calculation_popup, required_field_popup
 
 from .ti_notebook_page_module import TiNotebookPage
 

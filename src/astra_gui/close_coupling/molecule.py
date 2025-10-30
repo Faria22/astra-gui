@@ -11,11 +11,12 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from moldenViz import Plotter
-from utils.font_module import title_font
-from utils.notebook_module import NotebookPage
-from utils.popup_module import required_field_popup
-from utils.symmetry_module import Symmetry
-from utils.table_module import Table
+
+from astra_gui.utils.font_module import title_font
+from astra_gui.utils.notebook_module import NotebookPage
+from astra_gui.utils.popup_module import required_field_popup
+from astra_gui.utils.symmetry_module import Symmetry
+from astra_gui.utils.table_module import Table
 
 from .cc_notebook_page_module import CcNotebookPage
 
@@ -174,7 +175,6 @@ class Molecule(CcNotebookPage):
 
     def load(self) -> None:
         """Load molecular information from the existing input file."""
-
         def get_group(generators: str) -> str:
             for gen_ref in self.generators_ref_list:
                 group, gens = gen_ref.split(' ', 1)

@@ -7,8 +7,8 @@ from pathlib import Path
 from tkinter import ttk
 from typing import TYPE_CHECKING
 
-from utils.font_module import bold_font
-from utils.popup_module import (
+from astra_gui.utils.font_module import bold_font
+from astra_gui.utils.popup_module import (
     messagebox,
     missing_required_calculation_popup,
     missing_symmetry_popup,
