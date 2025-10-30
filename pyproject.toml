@@ -36,6 +36,9 @@ Documentation = "https://github.com/Faria22/astra-gui#readme"
 Issues = "https://github.com/Faria22/astra-gui/issues"
 Source = "https://github.com/Faria22/astra-gui"
 
+[project.scripts]
+astra_gui = "astra_gui.main:main"
+
 [tool.hatch.version]
 path = "src/astra_gui/__about__.py"
 
