@@ -13,9 +13,9 @@
 ## Installation
 
 ```console
-pip install astra-gui
+pip install astra_gui
 ```
 
 ## License
 
-`astra-gui` is distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
+`astra_gui` is distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
