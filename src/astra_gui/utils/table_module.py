@@ -198,7 +198,7 @@ class Table:
         np.ndarray
             Array of shape ``(num_columns, num_rows)`` containing string values.
         """
-        data = np.empty((self.num_cols, self.length), dtype=str)
+        data = np.empty((self.num_cols, self.length), dtype=object)
         for i in range(self.num_cols):
             for j in range(self.length):
                 data[i, j] = self.columns[i][j].get()
