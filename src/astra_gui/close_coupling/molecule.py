@@ -112,10 +112,10 @@ class Molecule(CcNotebookPage):
         tuple[list[int], np.ndarray]
             Atomic charges and 3D coordinates after symmetry expansion.
         """
-        atom_charges: list[int] = self.atoms_table.get()[0].astype(int).tolist()
+        atom_charges = self.atoms_table.get()[0].astype(int)
 
-        atom_centers: np.ndarray = self.atoms_table.get()[2:]
-        atom_centers = np.where(atom_centers == '', '0.0', atom_centers).T.astype(float)  # noqa: PLC1901
+        atom_centers = self.atoms_table.get()[2:]
+        atom_centers = np.where(atom_centers, atom_centers, '0.0').T.astype(float)
 
         temp_atom_charges = atom_charges.copy()
         temp_atom_centers = atom_centers.copy()
@@ -138,7 +138,7 @@ class Molecule(CcNotebookPage):
 
         return temp_atom_charges, temp_atom_centers
 
-    def check_linear_molecule(self) -> bool:
+    def is_molecule_linear(self) -> bool:
         """Return True when the geometry is approximately linear.
 
         Returns
@@ -146,15 +146,19 @@ class Molecule(CcNotebookPage):
         bool
             True if all atoms lie on the same line within tolerance.
         """
-        points: np.ndarray = self.get_all_atoms()[1]
-
         tolerance = 1e-4
+
+        points: np.ndarray = self.get_all_atoms()[1]
         if len(points) < 2:  # noqa: PLR2004
             return True  # Two points always define a line
 
         # Define the direction vector from the first two points
         direction = points[1] - points[0]
-        direction /= np.linalg.norm(direction)  # Normalize the direction vector
+        norm = np.linalg.norm(direction)
+        if norm == 0:
+            raise ValueError('The first two atoms cannot be at the same position.')
+
+        direction /= norm  # Normalize the direction vector
 
         # Check the distance of each subsequent point to the line
         for i in range(2, len(points)):
@@ -175,6 +179,7 @@ class Molecule(CcNotebookPage):
 
     def load(self) -> None:
         """Load molecular information from the existing input file."""
+
         def get_group(generators: str) -> str:
             for gen_ref in self.generators_ref_list:
                 group, gens = gen_ref.split(' ', 1)
@@ -275,7 +280,7 @@ class Molecule(CcNotebookPage):
 
         self.notebook.molecule_data['num_diff_atoms'] = num_diff_atoms
         self.notebook.molecule_data['number_atoms'] = np.shape(self.get_all_atoms()[1])[0]
-        self.notebook.molecule_data['linear_molecule'] = self.check_linear_molecule()
+        self.notebook.molecule_data['linear_molecule'] = self.is_molecule_linear()
 
     def save(self) -> None:
         """Persist the molecule data and update derived metadata."""
@@ -296,14 +301,17 @@ class Molecule(CcNotebookPage):
 
         atoms_table_data = self.atoms_table.get()
 
-        # if not np.any(atoms_table_data):
-        # ***
-        if atoms_table_data.size == 0:
+        if not np.any(atoms_table_data):
             required_field_popup('atoms list')
             return
 
         diff_atoms_count = list(Counter(atoms_table_data[0]).values())
+
         self.notebook.molecule_data['num_diff_atoms'] = len(diff_atoms_count)
+
+        # sort atoms by atomic number
+        sorted_indices = np.argsort(atoms_table_data[0].astype(int))
+        atoms_table_data = atoms_table_data[:, sorted_indices]
 
         atoms_data_string = ''
         ind = 0
@@ -325,7 +333,7 @@ class Molecule(CcNotebookPage):
             blank_lines=False,
         )
         self.notebook.molecule_data['number_atoms'] = np.shape(self.get_all_atoms()[1])[0]
-        self.notebook.molecule_data['linear_molecule'] = self.check_linear_molecule()
+        self.notebook.molecule_data['linear_molecule'] = self.is_molecule_linear()
 
     def plot_molecule(self) -> None:
         """Render the molecule via Molden if the environment supports it."""
@@ -358,7 +366,7 @@ class Molecule(CcNotebookPage):
             '[MO]',
         ]
 
-        Plotter(molden_lines, only_molecule=True)
+        Plotter(molden_lines, only_molecule=True, tk_root=self.controller)
 
     def set_irrep(self, group: str) -> None:
         """Update the symmetry group and notify the rest of the application."""

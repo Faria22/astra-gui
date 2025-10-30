@@ -4,7 +4,6 @@ import argparse
 import logging
 import os
 import shutil
-import sys
 import tkinter as tk
 from pathlib import Path
 from platform import system
@@ -60,13 +59,7 @@ class Astra(tk.Tk):
 
         self.minsize(self.root_geometry[0], self.root_geometry[1])
 
-        # Checks if astra_dir and astra_gui_dir is set
-        astra_gui_path = os.getenv('ASTRA_GUI_DIR', '')
-        if not astra_gui_path:
-            logger.critical('Did not find enviroment variable "ASTRA_GUI_DIR"')
-            sys.exit(1)
-
-        self.astra_gui_path = Path(astra_gui_path)
+        self.astra_gui_path = Path(__file__).resolve().parent
 
         self.notification = Notification(self.astra_gui_path / '.notification')
 
@@ -431,7 +424,8 @@ class Astra(tk.Tk):
         self.get_outputs()
 
 
-if __name__ == '__main__':
+def main() -> None:
+    """Run main function to run the ASTRA GUI application."""
     parser = argparse.ArgumentParser()
     parser.add_argument('path', nargs='?', default=None, action='store', help='Path to run the GUI on (optional)')
     parser.add_argument('-db', '--debug', action='store_true', help='Debug mode')
@@ -459,3 +453,7 @@ if __name__ == '__main__':
 
     astra = Astra(args)
     astra.mainloop()
+
+
+if __name__ == '__main__':
+    main()
