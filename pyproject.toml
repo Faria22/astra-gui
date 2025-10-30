@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "astra-gui"
+name = "astra_gui"
 dynamic = ["version"]
 description = 'A Python Graphical User Interface for the ASTRA program'
 readme = "README.md"
@@ -32,9 +32,9 @@ dependencies = [
 dev = ["basedpyright>=1.31.4", "pytest>=8.4", "ruff>=0.14"]
 
 [project.urls]
-Documentation = "https://github.com/Faria22/astra-gui#readme"
-Issues = "https://github.com/Faria22/astra-gui/issues"
-Source = "https://github.com/Faria22/astra-gui"
+Documentation = "https://github.com/Faria22/astra_gui#readme"
+Issues = "https://github.com/Faria22/astra_gui/issues"
+Source = "https://github.com/Faria22/astra_gui"
 
 [project.scripts]
 astra_gui = "astra_gui.main:main"
@@ -68,8 +68,8 @@ parallel = true
 omit = ["src/astra_gui/__about__.py"]
 
 [tool.coverage.paths]
-astra_gui = ["src/astra_gui", "*/astra-gui/src/astra_gui"]
-tests = ["tests", "*/astra-gui/tests"]
+astra_gui = ["src/astra_gui", "*/astra_gui/src/astra_gui"]
+tests = ["tests", "*/astra_gui/tests"]
 
 [tool.coverage.report]
 exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
