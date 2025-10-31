@@ -99,13 +99,16 @@ class SshClient:
     def save(self, host_name: str) -> None:
         """Persist the host configuration and reconnect."""
         if not host_name:
+            logger.warning('Attempted to save SSH config without a host name')
             messagebox.showerror('Missing string!', "'Host name' was not given.")
             return
 
+        logger.info('Saving SSH host configuration for "%s"', host_name)
         self.host_name = host_name
 
         set_ssh_host(host_name)
 
+        logger.debug('Refreshing SSH connection after host update')
         self._ssh_setup()
 
     @log_operation('SSH setup')

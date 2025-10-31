@@ -15,7 +15,7 @@ import toml
 
 logger = logging.getLogger(__name__)
 
-CONFIG_FILENAME = 'astra_gui_config.toml'
+CONFIG_FILENAME = 'config.toml'
 CONFIG_DIRECTORY_NAME = 'astra_gui'
 ENV_CONFIG_DIR = 'ASTRA_GUI_CONFIG_DIR'
 NOTIFICATION_SECTION = 'notification'
@@ -86,8 +86,13 @@ def save_config(config: Mapping[str, Any]) -> None:
     """Persist the provided config mapping to disk."""
     config_path = get_config_path()
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    with config_path.open('w', encoding='utf-8') as file:
-        toml.dump(dict(config), file)
+    logger.debug('Persisting config to %s', config_path)
+    try:
+        with config_path.open('w', encoding='utf-8') as file:
+            toml.dump(dict(config), file)
+    except (OSError, TypeError) as exc:
+        logger.error('Failed to write config file at %s: %s', config_path, exc)
+        raise
 
 
 def get_notification_settings() -> dict[str, str]:
@@ -138,6 +143,7 @@ def get_ssh_host() -> str:
 
 def set_ssh_host(host_name: str) -> None:
     """Persist the SSH host name to the config file."""
+    logger.info('Persisting SSH host "%s" to config section %s', host_name, SSH_SECTION)
     config = load_config()
     config[SSH_SECTION] = {'host': host_name}
     save_config(config)
