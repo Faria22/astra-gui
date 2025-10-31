@@ -26,10 +26,12 @@ logging.getLogger('paramiko').setLevel(logging.CRITICAL)
 logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
 
 # ruff: noqa: E402
+
 from astra_gui.close_coupling.create_cc_notebook import CreateCcNotebook
 from astra_gui.home_screen import HomeNotebook
 from astra_gui.time_dependent.time_dependent_notebook import TimeDependentNotebook
 from astra_gui.time_independent.time_independent_notebook import TimeIndependentNotebook
+from astra_gui.utils.config_module import get_ssh_host, set_ssh_host
 from astra_gui.utils.notification_module import Notification
 from astra_gui.utils.popup_module import (
     NotificationHelpPopup,
@@ -258,10 +260,12 @@ class Astra(tk.Tk):
         """SSH settings tab."""
 
         def save_host_name() -> None:
+            set_ssh_host(host_name_entry.get().strip())
+
+        def connect_ssh() -> None:
+            settings_window.destroy()
             if not self.ssh_client:
                 self.ssh_client = SshClient(self)
-
-            self.ssh_client.save(host_name_entry.get().strip())
 
         settings_window = tk.Toplevel(self)
         settings_window.title('Notification settings')
@@ -270,14 +274,18 @@ class Astra(tk.Tk):
         host_name_entry = ttk.Entry(settings_window)
         host_name_entry.grid(row=0, column=1)
 
-        if self.ssh_client:
-            host_name_entry.insert(0, self.ssh_client.host_name)
+        host_name_entry.insert(0, get_ssh_host())
 
-        ttk.Button(settings_window, text='Save', command=lambda: save_host_name).grid(
+        ttk.Button(settings_window, text='Save', command=save_host_name).grid(
             row=1,
             column=0,
-            columnspan=2,
-            pady=10,
+            pady=5,
+        )
+
+        ttk.Button(settings_window, text='Connect', command=connect_ssh).grid(
+            row=1,
+            column=1,
+            pady=5,
         )
 
     def notification_settings_tab(self) -> None:
