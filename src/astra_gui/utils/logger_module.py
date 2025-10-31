@@ -43,20 +43,29 @@ class CustomLogger(logging.Logger):
         sys.exit(1)  # Exit with error code 1
 
 
-def setup_logger(debug: bool) -> None:
+def setup_logger(*, debug: bool = False, verbose: bool = False, quiet: bool = False) -> None:
     """Configure the root logger and attach a colourised console handler."""
     # Create the root logger and set its level
     logging.setLoggerClass(CustomLogger)
     logger = logging.getLogger()  # Root logger
 
-    logger.setLevel(logging.DEBUG if debug else logging.WARNING)
+    if debug:
+        level = logging.DEBUG
+    elif verbose:
+        level = logging.INFO
+    elif quiet:
+        level = logging.ERROR
+    else:
+        level = logging.WARNING
+
+    logger.setLevel(level)
 
     if logger.hasHandlers():
         logger.handlers.clear()
 
     # Set up the console handler
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG if debug else logging.WARNING)
+    ch.setLevel(level)
 
     # Choose the format based on debug mode
     if debug:
