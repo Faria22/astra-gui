@@ -26,6 +26,7 @@ dependencies = [
     "ttkwidgets>=0.13",
     "paramiko>=4.0",
     "psutil>=7.1",
+    "toml>=0.10",
 ]
 
 [project.optional-dependencies]

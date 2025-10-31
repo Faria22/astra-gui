@@ -61,13 +61,13 @@ class Astra(tk.Tk):
 
         self.astra_gui_path = Path(__file__).resolve().parent
 
-        self.notification = Notification(self.astra_gui_path / '.notification')
+        self.notification = Notification()
 
         self.ssh_client = None
         self.home_path = Path.home()
         self.running_directory = None
         if args.ssh:
-            self.ssh_client = SshClient(self, self.astra_gui_path / '.ssh_host')
+            self.ssh_client = SshClient(self)
             if not (home_path := self.ssh_client.home_path):
                 raise RuntimeError('Could not find home path of the ssh client')
 
@@ -256,7 +256,7 @@ class Astra(tk.Tk):
 
         def save_host_name() -> None:
             if not self.ssh_client:
-                self.ssh_client = SshClient(self, self.astra_gui_path / '.ssh_host')
+                self.ssh_client = SshClient(self)
 
             self.ssh_client.save(host_name_entry.get().strip())
 

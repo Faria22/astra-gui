@@ -1,9 +1,11 @@
 """Helpers for configuring notification hooks used by the GUI."""
 
+from __future__ import annotations
+
 import logging
-from pathlib import Path
 from tkinter import messagebox
 
+from .config_module import get_notification_settings, set_notification_settings
 from .logger_module import log_operation
 
 logger = logging.getLogger(__name__)
@@ -12,9 +14,8 @@ logger = logging.getLogger(__name__)
 class Notification:
     """Persist and generate commands for external notifications."""
 
-    def __init__(self, input_file: Path) -> None:
-        """Load the saved notification method from `input_file` if present."""
-        self.input_file = input_file
+    def __init__(self) -> None:
+        """Load saved notification settings."""
         self.method = ''  # Either ntfy or email
         self.string = ''  # Either ntfy topic or email address
 
@@ -27,19 +28,15 @@ class Notification:
             messagebox.showwarning('Missing string!', 'String was not given')
             return
 
-        self.notification_string = notification_string
-
-        with self.input_file.open('w') as f:
-            f.write(f'{self.method}\n{notification_string}')
+        self.string = notification_string
+        set_notification_settings(self.method, notification_string)
 
     @log_operation('loading notification file')
     def load(self) -> None:
-        """Load notification settings from disk, if the file exists."""
-        if self.input_file.is_file():
-            with self.input_file.open('r') as f:
-                lines = f.read().split('\n')
-                self.method = lines[0].strip()
-                self.string = lines[1].strip()
+        """Load notification settings from disk."""
+        settings = get_notification_settings()
+        self.method = settings.get('method', '')
+        self.string = settings.get('string', '')
 
     def command(self, title: str) -> str:
         """Return notification command to add to script.
