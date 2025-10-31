@@ -1,15 +1,21 @@
 """SSH utilities for interacting with remote hosts from the GUI."""
 
+from __future__ import annotations
+
 import logging
 import stat  # For checking file types (S_ISDIR)
 import tkinter as tk
 from pathlib import Path
 from tkinter import messagebox, simpledialog, ttk
-from types import TracebackType
+from typing import TYPE_CHECKING
 
 import paramiko
 
+from .config_module import get_ssh_host, set_ssh_host
 from .logger_module import log_operation
+
+if TYPE_CHECKING:
+    from types import TracebackType
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +59,9 @@ class SftpContext:
 class SshClient:
     """Wrapper around Paramiko that adds GUI-friendly helpers."""
 
-    def __init__(self, root: tk.Tk, input_file: Path) -> None:
-        """Create a client bound to the Tk root and optional configuration file."""
+    def __init__(self, root: tk.Tk) -> None:
+        """Create a client bound to the Tk root."""
         self.root = root
-        self.input_file = input_file
         self.host_name = ''
         self.username = ''
         self.client = None
@@ -83,12 +88,12 @@ class SshClient:
 
     def load(self) -> None:
         """Load stored SSH settings and establish a connection."""
-        if not self.input_file.is_file():
+        host = get_ssh_host()
+
+        if not host:
             return
 
-        with self.input_file.open('r') as f:
-            self.host_name = f.read().split('\n')[0]
-
+        self.host_name = host
         self._ssh_setup()
 
     def save(self, host_name: str) -> None:
@@ -99,8 +104,7 @@ class SshClient:
 
         self.host_name = host_name
 
-        with self.input_file.open('w') as f:
-            f.write(host_name)
+        set_ssh_host(host_name)
 
         self._ssh_setup()
 
@@ -578,7 +582,7 @@ if __name__ == '__main__':
     style = ttk.Style()
     style.configure('TButton', padding=6, relief='flat', background='#ccc')
 
-    ssh_client = SshClient(root, Path('.ssh_host'))
+    ssh_client = SshClient(root)
 
     browse_button = ttk.Button(root, text='Browse Remote Folder...', command=ssh_client.browse_remote, style='TButton')
     browse_button.pack(pady=20, padx=20, fill=tk.X)
