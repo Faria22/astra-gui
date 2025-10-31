@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import sys
-from importlib import import_module
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-SRC_PATH = Path(__file__).resolve().parents[1] / 'src'
-if str(SRC_PATH) not in sys.path:
-    sys.path.insert(0, str(SRC_PATH))
-
-config_module = import_module('astra_gui.utils.config_module')
+try:
+    import astra_gui.utils.config_module as config_module
+except ModuleNotFoundError:
+    SRC_PATH = Path(__file__).resolve().parents[1] / 'src'
+    if str(SRC_PATH) not in sys.path:
+        sys.path.insert(0, str(SRC_PATH))
+    sys.modules.pop('astra_gui', None)
+    sys.modules.pop('astra_gui.utils', None)
+    import astra_gui.utils.config_module as config_module
 
 if TYPE_CHECKING:
     import pytest
