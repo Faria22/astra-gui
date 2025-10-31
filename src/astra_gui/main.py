@@ -12,13 +12,16 @@ from typing import TYPE_CHECKING
 
 from astra_gui.utils.logger_module import log_operation, setup_logger
 
-# Parse args *early* needed for setup_logger
+# Parse logging args *early* needed for setup_logger
 pre_parser = argparse.ArgumentParser(add_help=False)  # Temporary parser
-pre_parser.add_argument('-db', '--debug', action='store_true')
-pre_args, _ = pre_parser.parse_known_args()  # Parse just the debug flag
+log_group = pre_parser.add_mutually_exclusive_group()
+log_group.add_argument('-db', '--debug', action='store_true')
+log_group.add_argument('-v', '--verbose', action='store_true')
+log_group.add_argument('-q', '--quiet', action='store_true')
+pre_args, _ = pre_parser.parse_known_args()  # Parse just the logging flags
 
 # *** EXECUTE SETUP ***
-setup_logger(pre_args.debug)
+setup_logger(debug=pre_args.debug, verbose=pre_args.verbose, quiet=pre_args.quiet)
 logging.getLogger('paramiko').setLevel(logging.CRITICAL)
 logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
 
@@ -428,7 +431,10 @@ def main() -> None:
     """Run main function to run the ASTRA GUI application."""
     parser = argparse.ArgumentParser()
     parser.add_argument('path', nargs='?', default=None, action='store', help='Path to run the GUI on (optional)')
-    parser.add_argument('-db', '--debug', action='store_true', help='Debug mode')
+    logging_group = parser.add_mutually_exclusive_group()
+    logging_group.add_argument('-db', '--debug', action='store_true', help='Enable debug logging output')
+    logging_group.add_argument('-v', '--verbose', action='store_true', help='Show info level logging output')
+    logging_group.add_argument('-q', '--quiet', action='store_true', help='Only show error logging output')
     parser.add_argument('-ssh', action='store_true', help='Run the GUI over ssh')
     parser.add_argument('-t', '--test', nargs='?', const='all', help='Run all tests if no index is given')
 
@@ -449,7 +455,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    setup_logger(args.debug)
+    setup_logger(debug=args.debug, verbose=args.verbose, quiet=args.quiet)
 
     astra = Astra(args)
     astra.mainloop()
