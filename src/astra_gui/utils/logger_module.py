@@ -46,6 +46,32 @@ class CustomLogger(logging.Logger):
 logging.setLoggerClass(CustomLogger)
 
 
+_OPERATION_LINE_LENGTH = 100
+_OPERATION_ELLIPSIS_THRESHOLD = 3
+
+
+def _format_operation_banner(message: str, *, fill_char: str) -> str:
+    """Return a fixed-width banner with centred message for operation logs.
+
+    Returns
+    -------
+    str
+        The banner line padded with the requested fill character.
+    """
+    if not fill_char:
+        fill_char = '-'
+    char = fill_char[0]
+
+    max_message_length = max(_OPERATION_LINE_LENGTH - 4, 0)
+    display_message = message
+    if len(display_message) > max_message_length > _OPERATION_ELLIPSIS_THRESHOLD:
+        display_message = f'{display_message[:max_message_length - _OPERATION_ELLIPSIS_THRESHOLD]}...'
+
+    text = f' {display_message} '
+
+    return text.center(_OPERATION_LINE_LENGTH, char)
+
+
 def setup_logger(*, debug: bool = False, verbose: bool = False, quiet: bool = False) -> None:
     """Configure the root logger and attach a colourised console handler."""
     # Create the root logger and set its level
@@ -101,9 +127,12 @@ def log_operation(operation: str) -> Any:
         """
         @wraps(func)
         def wrapper(*args, **kwargs) -> Any:
-            logger.info('******************** Started %s.  ********************', operation, stacklevel=2)
+            start_message = _format_operation_banner(f'Started {operation}.', fill_char='*')
+            finish_message = _format_operation_banner(f'Finished {operation}.', fill_char='-')
+
+            logger.debug(start_message, stacklevel=2)
             result = func(*args, **kwargs)
-            logger.info('-------------------- Finished %s. --------------------', operation, stacklevel=2)
+            logger.debug(finish_message, stacklevel=2)
             return result
 
         return wrapper
