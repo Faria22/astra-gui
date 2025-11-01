@@ -38,7 +38,7 @@ Issues = "https://github.com/Faria22/astra_gui/issues"
 Source = "https://github.com/Faria22/astra_gui"
 
 [project.scripts]
-astra_gui = "astra_gui.main:main"
+astra_gui = "astra_gui.cli:main"
 
 [tool.hatch.version]
 path = "src/astra_gui/__about__.py"

@@ -9,7 +9,7 @@ from .pulse import PulsePage
 from .td_notebook_page_module import TdNotebookPage
 
 if TYPE_CHECKING:
-    from astra_gui.main import Astra
+    from astra_gui.app import Astra
 
 
 class TimeDependentNotebook(Notebook[TdNotebookPage]):

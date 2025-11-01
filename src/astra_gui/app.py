@@ -1,4 +1,4 @@
-"""Entry point for the ASTRA GUI application."""
+"""Core Tk application for the ASTRA GUI."""
 
 import argparse
 import logging
@@ -15,7 +15,7 @@ from astra_gui.home_screen import HomeNotebook
 from astra_gui.time_dependent.time_dependent_notebook import TimeDependentNotebook
 from astra_gui.time_independent.time_independent_notebook import TimeIndependentNotebook
 from astra_gui.utils.config_module import get_ssh_host, set_ssh_host
-from astra_gui.utils.logger_module import log_operation, setup_logger
+from astra_gui.utils.logger_module import log_operation
 from astra_gui.utils.notification_module import Notification
 from astra_gui.utils.popup_module import (
     NotificationHelpPopup,
@@ -417,41 +417,3 @@ class Astra(tk.Tk):
 
         self.get_inputs()
         self.get_outputs()
-
-
-def main() -> None:
-    """Run main function to run the ASTRA GUI application."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument('path', nargs='?', default=None, action='store', help='Path to run the GUI on (optional)')
-    logging_group = parser.add_mutually_exclusive_group()
-    logging_group.add_argument('-db', '--debug', action='store_true', help='Enable debug logging output')
-    logging_group.add_argument('-v', '--verbose', action='store_true', help='Show info level logging output')
-    logging_group.add_argument('-q', '--quiet', action='store_true', help='Only show error logging output')
-    parser.add_argument('-ssh', action='store_true', help='Run the GUI over ssh')
-    parser.add_argument('-t', '--test', nargs='?', const='all', help='Run all tests if no index is given')
-
-    create_cc = parser.add_argument_group(title='Create Close Coupling pages')
-    create_cc.add_argument('-m', '--molecule', action='store_true')
-    create_cc.add_argument('-d', '--dalton', action='store_true')
-    create_cc.add_argument('-l', '--lucia', action='store_true')
-    create_cc.add_argument('-c', '--closecoupling', action='store_true')
-    create_cc.add_argument('-b', '--bsplines', action='store_true')
-
-    time_independent = parser.add_argument_group('Time Independent pages')
-    time_independent.add_argument('-struc', '--structural', action='store_true')
-    time_independent.add_argument('-scatt', '--scattering', action='store_true')
-    time_independent.add_argument('-pad', '--pad', action='store_true')
-
-    time_dependent = parser.add_argument_group('Time Dependent pages')
-    time_dependent.add_argument('-p', '--pulse', action='store_true')
-
-    args = parser.parse_args()
-
-    setup_logger(debug=args.debug, verbose=args.verbose, quiet=args.quiet)
-
-    astra = Astra(args)
-    astra.mainloop()
-
-
-if __name__ == '__main__':
-    main()

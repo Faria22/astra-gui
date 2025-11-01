@@ -52,6 +52,6 @@ def solve(value: int) -> int:
 
 ## Logging and Diagnostics
 
-- GUI logging is configured via `astra_gui/utils/logger_module.py`. Pass `--debug` to `python -m astra_gui.main` when you need verbose output during development.
+- GUI logging is configured via `astra_gui/utils/logger_module.py`. Pass `--debug` to `python -m astra_gui.cli` when you need verbose output during development.
 
 Keeping these practices consistent helps contributors ramp quickly and ensures the GUI codebase stays healthy and predictable. Reach out to the maintainers if any guideline needs clarification or an update.
