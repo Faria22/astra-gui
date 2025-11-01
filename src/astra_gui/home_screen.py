@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from astra_gui.utils.notebook_module import Notebook
 
 if TYPE_CHECKING:
-    from astra_gui.main import Astra
+    from astra_gui.app import Astra
 
 
 class HomeNotebook(Notebook):

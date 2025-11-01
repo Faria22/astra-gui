@@ -26,4 +26,4 @@
 - Pull requests should describe the change, list validation (`hatch run all`), and reference related issues or tickets.
 
 ## Configuration & Environment Notes (Optional)
-- GUI logging is configured via `astra_gui/utils/logger_module.py`; pass `--debug` when invoking `python -m astra_gui.main` to enable verbose logs.
+- GUI logging is configured via `astra_gui/utils/logger_module.py`; pass `--debug` when invoking `python -m astra_gui.cli` to enable verbose logs.

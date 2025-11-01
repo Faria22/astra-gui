@@ -13,7 +13,7 @@ from .lucia import Lucia
 from .molecule import Molecule
 
 if TYPE_CHECKING:
-    from astra_gui.main import Astra
+    from astra_gui.app import Astra
 
 
 class CreateCcNotebook(Notebook[CcNotebookPage]):
