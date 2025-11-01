@@ -45,6 +45,7 @@ class CustomLogger(logging.Logger):
 
 logging.setLoggerClass(CustomLogger)
 
+
 def setup_logger(*, debug: bool = False, verbose: bool = False, quiet: bool = False) -> None:
     """Configure the root logger and attach a colourised console handler."""
     # Create the root logger and set its level
