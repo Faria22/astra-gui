@@ -43,10 +43,11 @@ class CustomLogger(logging.Logger):
         sys.exit(1)  # Exit with error code 1
 
 
+logging.setLoggerClass(CustomLogger)
+
 def setup_logger(*, debug: bool = False, verbose: bool = False, quiet: bool = False) -> None:
     """Configure the root logger and attach a colourised console handler."""
     # Create the root logger and set its level
-    logging.setLoggerClass(CustomLogger)
     logger = logging.getLogger()  # Root logger
 
     if debug:
