@@ -10,28 +10,12 @@ from platform import system
 from tkinter import filedialog, ttk
 from typing import TYPE_CHECKING
 
-from astra_gui.utils.logger_module import log_operation, setup_logger
-
-# Parse logging args *early* needed for setup_logger
-pre_parser = argparse.ArgumentParser(add_help=False)  # Temporary parser
-log_group = pre_parser.add_mutually_exclusive_group()
-log_group.add_argument('-db', '--debug', action='store_true')
-log_group.add_argument('-v', '--verbose', action='store_true')
-log_group.add_argument('-q', '--quiet', action='store_true')
-pre_args, _ = pre_parser.parse_known_args()  # Parse just the logging flags
-
-# *** EXECUTE SETUP ***
-setup_logger(debug=pre_args.debug, verbose=pre_args.verbose, quiet=pre_args.quiet)
-logging.getLogger('paramiko').setLevel(logging.CRITICAL)
-logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
-
-# ruff: noqa: E402
-
 from astra_gui.close_coupling.create_cc_notebook import CreateCcNotebook
 from astra_gui.home_screen import HomeNotebook
 from astra_gui.time_dependent.time_dependent_notebook import TimeDependentNotebook
 from astra_gui.time_independent.time_independent_notebook import TimeIndependentNotebook
 from astra_gui.utils.config_module import get_ssh_host, set_ssh_host
+from astra_gui.utils.logger_module import log_operation, setup_logger
 from astra_gui.utils.notification_module import Notification
 from astra_gui.utils.popup_module import (
     NotificationHelpPopup,
