@@ -94,6 +94,12 @@ ASTRA GUI shells out to the ASTRA binaries, so it must be able to find them thro
 
 This ensures the environment is configured both locally and for remote SSH sessions.
 
+## Remote Connections and Notifications
+
+ASTRA GUI supports SSH-backed runs and completion alerts. Configure remote access through **Settings ▸ SSH**; add the target host, user, and key to your `~/.ssh/config` so the dialog can reuse those settings. Enable run notifications via **Settings ▸ Notifications**, then select `Email` or `NTFY` and supply the destination address or topic to receive status updates.
+
+Detailed walkthroughs live in the GUI under **Help** in the menu bar.
+
 ## Developer Setup
 
 Clone the repository and install the project in development mode:
