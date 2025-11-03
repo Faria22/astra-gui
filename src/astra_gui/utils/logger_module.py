@@ -1,7 +1,6 @@
 """Logging utilities with colourised output and helper decorators."""
 
 import logging
-import sys
 from collections.abc import Callable
 from functools import wraps
 from typing import Any
@@ -35,14 +34,13 @@ class ColoredFormatter(logging.Formatter):
 
 # Creates a custom error function to automatically exit the code
 class CustomLogger(logging.Logger):
-    """Logger that exits the process whenever an error is emitted."""
+    """Logger that adds consistent stacklevel defaults for error messages."""
 
     def error(self, msg, *args, **kwargs) -> None:  # noqa: ANN001
-        """Log an error and terminate the process with exit code 1."""
+        """Log an error message while ensuring the caller's frame is reported."""
         if 'stacklevel' not in kwargs:
             kwargs['stacklevel'] = 2
         super().error(msg, *args, **kwargs)
-        sys.exit(1)  # Exit with error code 1
 
 
 logging.setLoggerClass(CustomLogger)
