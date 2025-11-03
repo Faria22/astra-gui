@@ -51,7 +51,7 @@ def _format_operation_banner(message: str, *, fill_char: str) -> str:
     max_message_length = max(_OPERATION_LINE_LENGTH - 4, 0)
     display_message = message
     if len(display_message) > max_message_length > _OPERATION_ELLIPSIS_THRESHOLD:
-        display_message = f'{display_message[:max_message_length - _OPERATION_ELLIPSIS_THRESHOLD]}...'
+        display_message = f'{display_message[: max_message_length - _OPERATION_ELLIPSIS_THRESHOLD]}...'
 
     text = f' {display_message} '
 
@@ -88,7 +88,7 @@ def setup_logger(*, debug: bool = False, verbose: bool = False, quiet: bool = Fa
     # Choose the format based on debug mode
     if debug:
         # Detailed format for debug mode
-        formatter = ColoredFormatter('%(levelname)s: %(message)s | %(filename)s - %(funcName)s: %(lineno)d')
+        formatter = ColoredFormatter('%(levelname)s: %(message)s | [%(name)s] %(funcName)s: %(lineno)d')
     else:
         # Simpler format for normal mode
         formatter = ColoredFormatter('%(levelname)s: %(message)s')
@@ -118,6 +118,7 @@ def log_operation(operation: str) -> Any:
         Callable[..., Any]
             Wrapped function with logging side-effects.
         """
+
         @wraps(func)
         def wrapper(*args, **kwargs) -> Any:
             start_message = _format_operation_banner(f'Started {operation}.', fill_char='*')
