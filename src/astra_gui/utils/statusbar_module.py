@@ -2,6 +2,7 @@
 
 import logging
 import tkinter as tk
+from collections import deque
 from tkinter import ttk
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ class StatusBar(ttk.Label):
 
         self.root = root
         self.default_message = default_text
-        self.message_queue: list[tuple[str, int]] = []
+        self.message_queue: deque[tuple[str, int]] = deque()
         self.is_displaying_message = False
 
     def show_message(
@@ -37,7 +38,7 @@ class StatusBar(ttk.Label):
     def show_next_message(self) -> None:
         """Display the next message in the queue."""
         if self.message_queue:
-            message, time = self.message_queue.pop()
+            message, time = self.message_queue.popleft()
             self.config(text=message)
             logger.info('Changed statusbar to %s', message)
             self.root.after(time * 1000, self.reset_message)

@@ -3,6 +3,7 @@
 import argparse
 import logging
 import os
+import shlex
 import shutil
 import tkinter as tk
 from pathlib import Path
@@ -90,12 +91,19 @@ class Astra(tk.Tk):
         new_path: bool = False,
         initial_dir: Path | None = None,
         title: str | None = None,
-    ) -> None:
+        set_running_dir: bool = True,
+    ) -> Path | None:
         """
-        Get the running directory for the GUI.
+        Get or select a directory path for the GUI.
 
-        If `new_path` is giving, prompts the user to select a new path, and `cd` to it.
-        If not, just moves the GUI to {input_path} if a truey `input_path` value was given.
+        If `new_path` is given, prompts the user to select a path. When `set_running_dir`
+        is True (default) the selection becomes the active running directory. Otherwise
+        the chosen path is returned without mutating GUI state.
+
+        Returns
+        -------
+        Optional[Path]
+            Normalised directory path when selection succeeds, otherwise ``None``.
         """
         if new_path:
             initial_dir = initial_dir or Path(self.running_directory or '').parent
@@ -104,54 +112,63 @@ class Astra(tk.Tk):
             else:
                 input_path = filedialog.askdirectory(initialdir=str(initial_dir), title=title)
 
-        if input_path is not None:  # Checks if a path was selected in the previous step
-            directory_path = Path(input_path)
+        if input_path is None:
+            return None
 
-            # Check if path exists
-            path_exists = self.ssh_client.path_exists(directory_path) if self.ssh_client else directory_path.exists()
+        directory_path = Path(input_path)
 
-            # If path doesn't exist, prompt user to create it
-            if not path_exists:
-                create_path = create_path_popup(str(directory_path))
-                if create_path:
-                    # Create the path
-                    try:
-                        if self.ssh_client:
-                            stdout, stderr, exit_code = self.ssh_client.run_remote_command(
-                                f'mkdir -p {directory_path}',
+        # Check if path exists
+        path_exists = self.ssh_client.path_exists(directory_path) if self.ssh_client else directory_path.exists()
+
+        # If path doesn't exist, prompt user to create it
+        if not path_exists:
+            create_path = create_path_popup(str(directory_path))
+            if create_path:
+                # Create the path
+                try:
+                    if self.ssh_client:
+                        remote_dir = shlex.quote(str(directory_path))
+                        stdout, stderr, exit_code = self.ssh_client.run_remote_command(
+                            f'mkdir -p {remote_dir}',
+                        )
+                        if exit_code != 0:
+                            logger.error(
+                                'Failed to create remote directory %s: %s',
+                                directory_path,
+                                stderr or stdout,
                             )
-                            if exit_code != 0:
-                                logger.error(
-                                    'Failed to create remote directory %s: %s',
-                                    directory_path,
-                                    stderr or stdout,
-                                )
-                                return
-                            logger.info('Created remote directory: %s', directory_path)
-                        else:
-                            directory_path.mkdir(parents=True, exist_ok=True)
-                            logger.info('Created local directory: %s', directory_path)
-                    except OSError as exc:
-                        logger.error('Failed to create directory %s: %s', directory_path, exc)
-                        return
-                else:
-                    # User chose not to create the path, so don't set it
-                    logger.info('User chose not to create path: %s', directory_path)
-                    return
+                            return None
+                        logger.info('Created remote directory: %s', directory_path)
+                    else:
+                        directory_path.mkdir(parents=True, exist_ok=True)
+                        logger.info('Created local directory: %s', directory_path)
+                except OSError as exc:
+                    logger.error('Failed to create directory %s: %s', directory_path, exc)
+                    return None
+            else:
+                # User chose not to create the path, so don't set it
+                logger.info('User chose not to create path: %s', directory_path)
+                return None
 
-            if not self.ssh_client:
-                directory_path = directory_path.resolve()
-                os.chdir(directory_path)
+        if not self.ssh_client:
+            directory_path = directory_path.resolve()
 
-            try:
-                relative_path = Path('~') / directory_path.relative_to(self.home_path)
-            except ValueError:
-                relative_path = directory_path
+        if not set_running_dir:
+            return directory_path
 
-            self.statusbar.show_message(f'Currect directory: {relative_path}', overwrite_default_text=True)
-            self.running_directory = directory_path
-            logger.info('Changed running directory to %s', relative_path)
-            self.reload()
+        if not self.ssh_client:
+            os.chdir(directory_path)
+
+        try:
+            relative_path = Path('~') / directory_path.relative_to(self.home_path)
+        except ValueError:
+            relative_path = directory_path
+
+        self.statusbar.show_message(f'Current directory: {relative_path}', overwrite_default_text=True)
+        self.running_directory = directory_path
+        logger.info('Changed running directory to %s', relative_path)
+        self.reload()
+        return directory_path
 
     @log_operation('getting notebooks')
     def get_notebooks(self, container: ttk.Frame) -> None:
@@ -398,20 +415,34 @@ class Astra(tk.Tk):
             input_path=None,
             new_path=True,
             initial_dir=self.astra_gui_path.parent / 'tests',
+            set_running_dir=False,
         )
         if not template_path:
             return
 
         self.erase()
         for folder in ['QC', 'store']:
+            target_path = self.running_directory / folder
             if self.ssh_client:
-                if self.ssh_client.path_exists(Path(folder)):
-                    self.ssh_client.run_remote_command(f'rm -rf {self.running_directory / folder}')
-            elif Path(folder).is_dir():
-                shutil.rmtree(folder)
+                if self.ssh_client.path_exists(target_path):
+                    remote_target = shlex.quote(str(target_path))
+                    self.ssh_client.run_remote_command(f'rm -rf {remote_target}')
+            elif target_path.is_dir():
+                shutil.rmtree(target_path)
 
         if self.ssh_client:
-            self.ssh_client.run_remote_command(f'mv -r {template_path} {self.running_directory}')
+            src_path = str(template_path)
+            src_for_copy = f'{src_path}.' if src_path.endswith('/') else f'{src_path}/.'
+            dst_path = shlex.quote(str(self.running_directory))
+            command = f'cp -r {shlex.quote(src_for_copy)} {dst_path}'
+            stdout, stderr, exit_code = self.ssh_client.run_remote_command(command)
+            if exit_code != 0:
+                logger.error(
+                    'Failed to copy template from %s to %s: %s',
+                    template_path,
+                    self.running_directory,
+                    stderr or stdout,
+                )
         else:
             shutil.copytree(template_path, self.running_directory, dirs_exist_ok=True)
 
