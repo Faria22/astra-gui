@@ -137,18 +137,24 @@ class Astra(tk.Tk):
                                 directory_path,
                                 stderr or stdout,
                             )
-                            return None
-                        logger.info('Created remote directory: %s', directory_path)
-                    else:
-                        directory_path.mkdir(parents=True, exist_ok=True)
-                        logger.info('Created local directory: %s', directory_path)
-                except OSError as exc:
-                    logger.error('Failed to create directory %s: %s', directory_path, exc)
-                    return None
-            else:
-                # User chose not to create the path, so don't set it
-                logger.info('User chose not to create path: %s', directory_path)
-                return None
+                            if exit_code != 0:
+                                logger.error(
+                                    'Remote directory creation failed: %s -> %s',
+                                    directory_path,
+                                    stderr or stdout,
+                                )
+                                return
+                            logger.info('Remote directory created: %s', directory_path)
+                        else:
+                            directory_path.mkdir(parents=True, exist_ok=True)
+                            logger.info('Local directory created: %s', directory_path)
+                    except OSError as exc:
+                        logger.error('Directory creation failed: %s -> %s', directory_path, exc)
+                        return
+                else:
+                    # User chose not to create the path, so don't set it
+                    logger.info('Directory setup skipped: user declined %s', directory_path)
+                    return
 
         if not self.ssh_client:
             directory_path = directory_path.resolve()
@@ -164,11 +170,10 @@ class Astra(tk.Tk):
         except ValueError:
             relative_path = directory_path
 
-        self.statusbar.show_message(f'Current directory: {relative_path}', overwrite_default_text=True)
-        self.running_directory = directory_path
-        logger.info('Changed running directory to %s', relative_path)
-        self.reload()
-        return directory_path
+            self.statusbar.show_message(f'Currect directory: {relative_path}', overwrite_default_text=True)
+            self.running_directory = directory_path
+            logger.info('Working directory updated: %s', relative_path)
+            self.reload()
 
     @log_operation('getting notebooks')
     def get_notebooks(self, container: ttk.Frame) -> None:
@@ -194,9 +199,9 @@ class Astra(tk.Tk):
         num_selected = all_pages.count(True)
         if num_selected == 1:
             if not args.path:
-                logger.error('Must give a path to select a page!')
+                logger.warning('Notebook selection blocked: --path is required when a page flag is set')
         elif num_selected > 1:
-            logger.error('More than one page option was given!')
+            logger.warning('Notebook selection conflict: multiple page flags provided')
 
         for notebook_ind, notebook_pages in enumerate([cc_pages, ti_pages, td_pages], 1):
             if any(notebook_pages):
@@ -211,16 +216,16 @@ class Astra(tk.Tk):
         if self.running_directory or notebook_ind == 0:
             notebook = self.notebooks[notebook_ind]
             if notebook.showing:
-                logger.info('Already showing notebook %d.', notebook_ind)
+                logger.debug('Notebook switch skipped: index %d already active', notebook_ind)
                 return
 
             self.hide_notebooks()
             notebook.notebook_frame.grid(row=0, column=0, sticky='nsew')
             notebook.showing = True
-            logger.info('Showing notebook %d.', notebook_ind)
+            logger.info('Notebook activated: index %d', notebook_ind)
         else:
             directory_popup()
-            logger.info('No running directory previously selected.')
+            logger.warning('Notebook activation blocked: no working directory selected')
 
     @log_operation('hiding notebooks')
     def hide_notebooks(self) -> None:
@@ -297,7 +302,7 @@ class Astra(tk.Tk):
             if not method:
                 method = 'ntfy'  # If empty method is passed, set it to ntfy
 
-            logger.debug('Button states: %s %s', ntfy_button.state(), email_button.state())
+            logger.debug('Notification buttons state: %s %s', ntfy_button.state(), email_button.state())
 
             self.notification.method = method
             if method == 'ntfy':
@@ -310,7 +315,7 @@ class Astra(tk.Tk):
                 email_button.state(['selected'])
 
             label.config(text=label_text)
-            logger.debug('Button states: %s %s', ntfy_button.state(), email_button.state())
+            logger.debug('Notification buttons state: %s %s', ntfy_button.state(), email_button.state())
 
         settings_window = tk.Toplevel(self)
         settings_window.title('Notification settings')

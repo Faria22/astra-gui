@@ -1,10 +1,11 @@
 """Logging utilities with colourised output and helper decorators."""
 
 import logging
-import sys
 from collections.abc import Callable
 from functools import wraps
 from typing import Any
+
+_HANDLER_STATE: dict[str, logging.Handler | None] = {'managed': None}
 
 
 class ColoredFormatter(logging.Formatter):
@@ -31,23 +32,37 @@ class ColoredFormatter(logging.Formatter):
         return f'{color}{log_msg}{ColoredFormatter.COLORS["RESET"]}'
 
 
-# Creates a custom error function to automatically exit the code
-class CustomLogger(logging.Logger):
-    """Logger that exits the process whenever an error is emitted."""
-
-    def error(self, msg, *args, **kwargs) -> None:  # noqa: ANN001
-        """Log an error and terminate the process with exit code 1."""
-        if 'stacklevel' not in kwargs:
-            kwargs['stacklevel'] = 2
-        super().error(msg, *args, **kwargs)
-        sys.exit(1)  # Exit with error code 1
+_OPERATION_LINE_LENGTH = 100
+_OPERATION_ELLIPSIS_THRESHOLD = 3
 
 
-logging.setLoggerClass(CustomLogger)
+def _format_operation_banner(message: str, *, fill_char: str) -> str:
+    """Return a fixed-width banner with centred message for operation logs.
+
+    Returns
+    -------
+    str
+        The banner line padded with the requested fill character.
+    """
+    if not fill_char:
+        fill_char = '-'
+    char = fill_char[0]
+
+    max_message_length = max(_OPERATION_LINE_LENGTH - 4, 0)
+    display_message = message
+    if len(display_message) > max_message_length > _OPERATION_ELLIPSIS_THRESHOLD:
+        display_message = f'{display_message[:max_message_length - _OPERATION_ELLIPSIS_THRESHOLD]}...'
+
+    text = f' {display_message} '
+
+    return text.center(_OPERATION_LINE_LENGTH, char)
 
 
 def setup_logger(*, debug: bool = False, verbose: bool = False, quiet: bool = False) -> None:
-    """Configure the root logger and attach a colourised console handler."""
+    """Configure the root logger and attach a colourised console handler.
+
+    Existing handlers that were not installed by this helper are preserved.
+    """
     # Create the root logger and set its level
     logger = logging.getLogger()  # Root logger
 
@@ -62,8 +77,9 @@ def setup_logger(*, debug: bool = False, verbose: bool = False, quiet: bool = Fa
 
     logger.setLevel(level)
 
-    if logger.hasHandlers():
-        logger.handlers.clear()
+    for handler in list(logger.handlers):
+        if getattr(handler, 'astra_managed', False):
+            logger.removeHandler(handler)
 
     # Set up the console handler
     ch = logging.StreamHandler()
@@ -78,7 +94,10 @@ def setup_logger(*, debug: bool = False, verbose: bool = False, quiet: bool = Fa
         formatter = ColoredFormatter('%(levelname)s: %(message)s')
 
     ch.setFormatter(formatter)
+    ch.set_name('astra_gui.console')
+    ch.astra_managed = True  # type: ignore[attr-defined]
     logger.addHandler(ch)
+    _HANDLER_STATE['managed'] = ch
 
 
 def log_operation(operation: str) -> Any:
@@ -101,14 +120,28 @@ def log_operation(operation: str) -> Any:
         """
         @wraps(func)
         def wrapper(*args, **kwargs) -> Any:
-            logger.info('******************** Started %s.  ********************', operation, stacklevel=2)
+            start_message = _format_operation_banner(f'Started {operation}.', fill_char='*')
+            finish_message = _format_operation_banner(f'Finished {operation}.', fill_char='-')
+
+            logger.debug(start_message, stacklevel=2)
             result = func(*args, **kwargs)
-            logger.info('-------------------- Finished %s. --------------------', operation, stacklevel=2)
+            logger.debug(finish_message, stacklevel=2)
             return result
 
         return wrapper
 
     return decorator
+
+
+def get_managed_handler() -> logging.Handler | None:
+    """Return the handler managed by setup_logger, if any.
+
+    Returns
+    -------
+    logging.Handler | None
+        Managed handler instance when available, otherwise ``None``.
+    """
+    return _HANDLER_STATE['managed']
 
 
 if __name__ == '__main__':
