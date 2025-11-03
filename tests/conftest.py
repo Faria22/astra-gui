@@ -7,7 +7,7 @@ import types
 from dataclasses import dataclass, field
 from functools import partialmethod
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 import pytest
 
@@ -184,7 +184,7 @@ class _ReadableStream(io.BytesIO):
         super().__init__(data)
         self.channel = _FakeChannel(exit_status)
 
-    def __enter__(self) -> _ReadableStream:
+    def __enter__(self) -> Self:
         """Reset pointer on context entry.
 
         Returns
@@ -228,7 +228,7 @@ class _WritableStream(io.StringIO):
             self._storage[self._path] = self.getvalue()
         super().close()
 
-    def __enter__(self) -> _WritableStream:
+    def __enter__(self) -> Self:
         """Return self for context-manager support.
 
         Returns
