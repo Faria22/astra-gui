@@ -693,7 +693,6 @@ class Lucia(CcNotebookPage):
 
         if not sa:
             self.notebook.lucia_data['states'] = self.get_states_list(states_data)
-        else:
             states_data = states_data.astype('U100')  # Allows for longer strings in the array
             states_data[:, 0] = np.array([f'{float(weight):e}'.replace('e', 'D') for weight in states_data[:, 0]])
 
