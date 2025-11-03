@@ -124,7 +124,6 @@ class Astra(tk.Tk):
         if not path_exists:
             create_path = create_path_popup(str(directory_path))
             if create_path:
-                # Create the path
                 try:
                     if self.ssh_client:
                         remote_dir = shlex.quote(str(directory_path))
@@ -133,28 +132,21 @@ class Astra(tk.Tk):
                         )
                         if exit_code != 0:
                             logger.error(
-                                'Failed to create remote directory %s: %s',
+                                'Remote directory creation failed: %s -> %s',
                                 directory_path,
                                 stderr or stdout,
                             )
-                            if exit_code != 0:
-                                logger.error(
-                                    'Remote directory creation failed: %s -> %s',
-                                    directory_path,
-                                    stderr or stdout,
-                                )
-                                return
-                            logger.info('Remote directory created: %s', directory_path)
-                        else:
-                            directory_path.mkdir(parents=True, exist_ok=True)
-                            logger.info('Local directory created: %s', directory_path)
-                    except OSError as exc:
-                        logger.error('Directory creation failed: %s -> %s', directory_path, exc)
-                        return
-                else:
-                    # User chose not to create the path, so don't set it
-                    logger.info('Directory setup skipped: user declined %s', directory_path)
-                    return
+                            return None
+                        logger.info('Remote directory created: %s', directory_path)
+                    else:
+                        directory_path.mkdir(parents=True, exist_ok=True)
+                        logger.info('Local directory created: %s', directory_path)
+                except OSError as exc:
+                    logger.error('Directory creation failed: %s -> %s', directory_path, exc)
+                    return None
+            else:
+                logger.info('Directory setup skipped: user declined %s', directory_path)
+                return None
 
         if not self.ssh_client:
             directory_path = directory_path.resolve()
@@ -170,10 +162,11 @@ class Astra(tk.Tk):
         except ValueError:
             relative_path = directory_path
 
-            self.statusbar.show_message(f'Currect directory: {relative_path}', overwrite_default_text=True)
-            self.running_directory = directory_path
-            logger.info('Working directory updated: %s', relative_path)
-            self.reload()
+        self.statusbar.show_message(f'Current directory: {relative_path}', overwrite_default_text=True)
+        self.running_directory = directory_path
+        logger.info('Working directory updated: %s', relative_path)
+        self.reload()
+        return directory_path
 
     @log_operation('getting notebooks')
     def get_notebooks(self, container: ttk.Frame) -> None:
