@@ -96,7 +96,7 @@ class Astra(tk.Tk):
         """
         Get or select a directory path for the GUI.
 
-        If `new_path` is given, prompts the user to select a path. When `set_running_dir`
+        If `new_path` is True, prompts the user to select a path. When `set_running_dir`
         is True (default) the selection becomes the active running directory. Otherwise
         the chosen path is returned without mutating GUI state.
 
