@@ -692,7 +692,10 @@ class Lucia(CcNotebookPage):
         states_data = self.unpack_all_sym(states_data.T, sym_ind)
 
         if not sa:
+            # Save the states list to the notebook cache
             self.notebook.lucia_data['states'] = self.get_states_list(states_data)
+        else:
+            # Format weights and add electrons and spin columns
             states_data = states_data.astype('U100')  # Allows for longer strings in the array
             states_data[:, 0] = np.array([f'{float(weight):e}'.replace('e', 'D') for weight in states_data[:, 0]])
 
@@ -702,6 +705,7 @@ class Lucia(CcNotebookPage):
             spin_column = states_data[:, 2].astype(int) - 1
             states_data = np.insert(states_data, 4, spin_column, axis=1)
 
+        # Converts symmetry from string to index
         states_data[:, sym_ind] = np.array([self.sym.irrep.index(irrep) for irrep in states_data[:, sym_ind]])
 
         # Sorts the data based on the pattern lucia expects
@@ -710,6 +714,7 @@ class Lucia(CcNotebookPage):
             :,
         ]
 
+        # Convert all data to string for serialisation
         states_data = states_data.astype(str)
 
         if not sa:
