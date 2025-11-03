@@ -39,7 +39,7 @@ class StatusBar(ttk.Label):
         if self.message_queue:
             message, time = self.message_queue.pop()
             self.config(text=message)
-            logger.info('Changed statusbar to %s', message)
+            logger.debug('Status bar message displayed: %s', message)
             self.root.after(time * 1000, self.reset_message)
 
     def reset_message(self) -> None:
@@ -48,6 +48,6 @@ class StatusBar(ttk.Label):
             self.show_next_message()
             return
 
-        logger.info('Changed statusbar to default message: %s', self.default_message)
+        logger.debug('Status bar reset: %s', self.default_message)
         self.config(text=self.default_message)
         self.is_displaying_message = False

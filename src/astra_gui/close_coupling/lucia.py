@@ -186,7 +186,7 @@ class Lucia(CcNotebookPage):
             return
 
         if 'orbital_energies' not in self.notebook.dalton_data:
-            logger.error("Dalton output exists but it's information was not retrieved.")
+            logger.warning('Dalton output detected: orbital energies missing from cache')
 
         if not self.notebook.dalton_data['orbital_energies']:
             return
