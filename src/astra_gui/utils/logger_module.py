@@ -32,20 +32,6 @@ class ColoredFormatter(logging.Formatter):
         return f'{color}{log_msg}{ColoredFormatter.COLORS["RESET"]}'
 
 
-# Creates a custom error function to automatically exit the code
-class CustomLogger(logging.Logger):
-    """Logger that adds consistent stacklevel defaults for error messages."""
-
-    def error(self, msg, *args, **kwargs) -> None:  # noqa: ANN001
-        """Log an error message while ensuring the caller's frame is reported."""
-        if 'stacklevel' not in kwargs:
-            kwargs['stacklevel'] = 2
-        super().error(msg, *args, **kwargs)
-
-
-logging.setLoggerClass(CustomLogger)
-
-
 _OPERATION_LINE_LENGTH = 100
 _OPERATION_ELLIPSIS_THRESHOLD = 3
 
