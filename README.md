@@ -83,16 +83,8 @@ Add the `--debug` flag to enable verbose logging if you are diagnosing issues.
 
 ASTRA GUI shells out to the ASTRA binaries, so it must be able to find them through environment variables such as `PATH`, `ASTRA_HOME`, or any custom variables your installation requires.
 
-- When you connect to a machine with `ssh`, Bash starts as a *login shell*. Login shells read `~/.bash_profile` (or `~/.profile`) first and skip `~/.bashrc` unless it is explicitly sourced. If you only export your ASTRA paths in `~/.bashrc`, they will be missing when you launch ASTRA GUI over SSH.
-- Add the relevant exports directly to `~/.bash_profile` so they load for login shells:
-
-  ```bash
-  # ~/.bash_profile
-  export ASTRA_HOME="$HOME/astra"
-  export PATH="$ASTRA_HOME/bin:$PATH"
-  ```
-
-This ensures the environment is configured both locally and for remote SSH sessions.
+- When you connect to a machine with `ssh`, Bash starts as a *login shell*. Login shells read `~/.bash_profile` (or `~/.profile`) first and skip `~/.bashrc` unless it is explicitly sourced.
+- If you maintain custom `PATH` entries for ASTRA (or for companion tools like DALTON, LUCIA, SCATCI, or PRISM) in `~/.bashrc`, move those exports to `~/.bash_profile` so they are available when ASTRA GUI launches within a login shell.
 
 ## Remote Connections and Notifications
 
