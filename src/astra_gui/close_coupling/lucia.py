@@ -216,6 +216,7 @@ class Lucia(CcNotebookPage):
         np.ndarray
             Two-column array containing orbital labels and energies.
         """
+
         def sort_energies(data: np.ndarray) -> np.ndarray:
             sorted_indices = np.argsort(data[:, 1].astype(float))
             return data[sorted_indices]
@@ -249,6 +250,7 @@ class Lucia(CcNotebookPage):
         tuple[bool, str]
             Success flag and error message describing any issues.
         """
+
         def successful_calculation(file: Path) -> bool:
             content = self.read_file_content(file)
             return 'STOP  I am home from the loops' in content
@@ -363,6 +365,7 @@ class Lucia(CcNotebookPage):
         np.ndarray
             Structured array describing states and associated metadata.
         """
+
         @dataclass
         class StateCounter:
             state: np.ndarray
@@ -534,6 +537,7 @@ class Lucia(CcNotebookPage):
     @log_operation('getting lucia outputs')
     def get_outputs(self) -> None:
         """Refresh cached energies and notify dependent pages of any changes."""
+
         def output_file(ind: str | int) -> Path:
             return Path(f'QC/LUCIA_BLKH_{ind}.{ind}')
 
@@ -688,12 +692,11 @@ class Lucia(CcNotebookPage):
         states_data = self.unpack_all_sym(states_data.T, sym_ind)
 
         if not sa:
+            # Save the states list to the notebook cache
             self.notebook.lucia_data['states'] = self.get_states_list(states_data)
-
-        if sa:
-            states_data = states_data.astype(
-                'U100',
-            )  # Allows for longer strings in the array
+        else:
+            # Format weights and add electrons and spin columns
+            states_data = states_data.astype('U100')  # Allows for longer strings in the array
             states_data[:, 0] = np.array([f'{float(weight):e}'.replace('e', 'D') for weight in states_data[:, 0]])
 
             electrons_column = np.full(states_data.shape[0], active_electrons)
@@ -702,6 +705,7 @@ class Lucia(CcNotebookPage):
             spin_column = states_data[:, 2].astype(int) - 1
             states_data = np.insert(states_data, 4, spin_column, axis=1)
 
+        # Converts symmetry from string to index
         states_data[:, sym_ind] = np.array([self.sym.irrep.index(irrep) for irrep in states_data[:, sym_ind]])
 
         # Sorts the data based on the pattern lucia expects
@@ -709,6 +713,9 @@ class Lucia(CcNotebookPage):
             np.lexsort((states_data[:, sym_ind + 1], states_data[:, sym_ind])),
             :,
         ]
+
+        # Convert all data to string for serialisation
+        states_data = states_data.astype(str)
 
         if not sa:
             lines = [f'{states_data.shape[0]}'] + [' '.join(state) for state in states_data]
@@ -834,6 +841,7 @@ class Lucia(CcNotebookPage):
 
     def print_irrep(self, new_sym: bool = False) -> None:
         """Rebuild widgets using the newly selected symmetry."""
+
         def remove_add_irrep(frame: ttk.Frame) -> None:
             """Remove old irrep and and new one to needed widgets in specific frame."""
             # Removes previous irrep
