@@ -9,7 +9,7 @@ ASTRA GUI provides a desktop interface for preparing and running ASTRA workflows
 
 ## Requirements
 
-- Python 3.10–3.13 (CPython)
+- Python 3.11–3.13 (CPython)
 - Tkinter (GUI toolkit used by the application)
 - ASTRA binaries available on your `PATH`
 
