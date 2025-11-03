@@ -569,6 +569,8 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
                 self.controller.after(0, lambda: missing_script_file_popup(script_name))
                 return
 
+            logger.info('Background run requested: %s (%s)', script_name, script_path)
+
             if self.check_running_programs(script_commands):
                 self.controller.after(0, lambda: check_programs_helper(script_name))
                 if not run:
@@ -577,13 +579,46 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
                     return
 
             if self.ssh_client:
-                self.ssh_client.run_remote_command(
-                    f'cd {self.controller.running_directory} && bash -l -c "nohup ./{script_path} > nohup.out 2>&1 &"',
+                remote_command = (
+                    f'cd {self.controller.running_directory} && '
+                    f'bash -l -c "nohup ./{script_path} > nohup.out 2>&1 &"'
                 )
+                logger.info('Background run (remote): %s', remote_command)
+                stdout, stderr, exit_code = self.ssh_client.run_remote_command(remote_command)
+                if stdout:
+                    logger.debug('Background run remote stdout: %s', stdout)
+                if exit_code != 0:
+                    logger.error(
+                        'Background run failed: %s (exit %s, stderr: %s)',
+                        script_name,
+                        exit_code,
+                        stderr or stdout,
+                    )
+                    return
+                logger.debug('Background run sentinel wait started: %s', script_name)
                 while not self.path_exists(Path('.completed')):
                     time.sleep(1)
+                logger.debug('Background run sentinel detected: %s', script_name)
             else:
-                subprocess.run(f'nohup ./{script_path} &'.split(), check=False)
+                launch_command = f'nohup ./{script_path} &'
+                logger.info('Background run (local): %s', launch_command)
+                result = subprocess.run(
+                    launch_command.split(),
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                if result.stdout.strip():
+                    logger.debug('Background run launcher stdout: %s', result.stdout.strip())
+                if result.stderr.strip():
+                    logger.debug('Background run launcher stderr: %s', result.stderr.strip())
+                if result.returncode != 0:
+                    logger.error(
+                        'Background run failed: %s (exit %s)',
+                        script_name,
+                        result.returncode,
+                    )
+                    return
 
             self.controller.after(
                 0,
@@ -612,14 +647,14 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
                 # pgrep exits with 0 if a match is found, 1 if no match, >1 on error
                 if exit_status == 0:
                     logger.info(
-                        "Found running process matching '%s' for user '%s' on remote server.",
+                        "Process check detected running command: '%s' (user '%s')",
                         command,
                         user,
                     )
                     return True  # Found a running instance
                 if exit_status == 1:
-                    logger.info(
-                        "No running process matching '%s' for user '%s' found by pgrep.",
+                    logger.debug(
+                        "Process check found no matches for '%s' (user '%s')",
                         command,
                         user,
                     )
@@ -627,7 +662,7 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
                 else:
                     # pgrep exited with an error (e.g., command not found, invalid user)
                     logger.error(
-                        "pgrep command failed for pattern '%s'. Exit: %s, Stderr: %s",
+                        "Process check failed for pattern '%s': exit %s, stderr %s",
                         command,
                         exit_status,
                         stderr,
@@ -640,7 +675,7 @@ class NotebookPage(ttk.Frame, ABC, Generic[Nb]):
                     and proc.info['name'] in script_commands
                     and proc.info['status'] == psutil.STATUS_RUNNING
                 ):
-                    logger.debug('Already running.')
+                    logger.info('Process check detected running command: %s', proc.info['name'])
                     return True
 
         return False

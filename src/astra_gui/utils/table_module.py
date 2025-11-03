@@ -1,6 +1,5 @@
 """Reusable table widget with optional combobox support."""
 
-import logging
 import tkinter as tk
 from functools import partial
 from itertools import zip_longest
@@ -9,8 +8,6 @@ from tkinter import ttk
 import numpy as np
 
 from .scrollable_module import ScrollableFrame
-
-logger = logging.getLogger(__name__)
 
 
 class Table:
@@ -48,18 +45,19 @@ class Table:
         if isinstance(col_types, str):
             col_types = [col_types] * self.num_cols
         elif len(col_types) != self.num_cols:  # If not a string, then it's a list
-            logger.error(
-                "Number of items in 'col_types' doesn't match the number of labels",
+            raise ValueError(
+                f'Table configuration invalid: expected {self.num_cols} column types, '
+                f'received {len(col_types)}',
             )
 
         # If not combobox value list was given, make it an empty list
         if not combobox_values_list:
-            combobox_values_list = [[]] * col_types.count('combobox')
+            combobox_values_list = [[] for _ in range(col_types.count('combobox'))]
 
         # Checks if the number of combobox values is the same as the number of combobox columns
         if col_types.count('combobox') != len(combobox_values_list):
-            logger.error(
-                'Number of comboboxes columns is different than the number of combobox values assigned.',
+            raise ValueError(
+                'Table configuration invalid: combobox value lists do not match combobox columns',
             )
 
         self.default_values = default_values or []

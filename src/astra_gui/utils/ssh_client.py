@@ -40,7 +40,7 @@ class SftpContext:
             self._sftp = self._ssh_client.open_sftp()
         except (paramiko.SSHException, OSError) as e:
             # Common errors: Permission denied, No such file or directory (if parent dir missing)
-            logger.error('SFTP error on entry: %s', e)
+            logger.error('SFTP session failed: %s', e)
             raise
         else:
             return self._sftp
@@ -79,7 +79,7 @@ class SshClient:
             Normalised remote home directory, or ``None`` if unavailable.
         """
         if not self.client:
-            logger.error('No ssh client')
+            logger.warning('SSH client unavailable: cannot determine remote home path')
             return None
 
         with SftpContext(self.client) as sftp:
@@ -99,16 +99,16 @@ class SshClient:
     def save(self, host_name: str) -> None:
         """Persist the host configuration and reconnect."""
         if not host_name:
-            logger.warning('Attempted to save SSH config without a host name')
+            logger.warning('SSH config save skipped: host name missing')
             messagebox.showerror('Missing string!', "'Host name' was not given.")
             return
 
-        logger.info('Saving SSH host configuration for "%s"', host_name)
+        logger.info('SSH config saved: host "%s"', host_name)
         self.host_name = host_name
 
         set_ssh_host(host_name)
 
-        logger.debug('Refreshing SSH connection after host update')
+        logger.debug('SSH config saved: refreshing connection after host update')
         self._ssh_setup()
 
     @log_operation('SSH setup')
@@ -121,16 +121,20 @@ class SshClient:
             with ssh_config_path.open() as f:
                 ssh_config.parse(f)
         else:
-            logger.error('Warning: SSH config file not found at %s', ssh_config_path)
+            logger.warning('SSH setup: config file not found at %s', ssh_config_path)
             return
 
         host_config = ssh_config.lookup(self.host_name)
 
         if not host_config:
-            logger.error('Host not found in ssh config file.')
+            logger.error('SSH setup failed: host "%s" not found in config', self.host_name)
             return
 
         hostname = host_config.get('hostname')
+        if not hostname:
+            logger.error('SSH setup failed: hostname missing for "%s"', self.host_name)
+            return
+
         port = int(host_config.get('port', 22))
         self.username = host_config.get('user')  # Will be None if not found
         identity_file_list = host_config.get('identityfile', [])  # Returns a list
@@ -138,20 +142,23 @@ class SshClient:
 
         # Prompt for username if not found in config
         if not self.username:
-            logger.error('Username is required.')
+            logger.error('SSH setup failed: username missing for "%s"', self.host_name)
             return
 
         if not identity_file:
-            logger.error('Identity file specified but not found.')
+            logger.error('SSH setup failed: identity file missing for "%s"', self.host_name)
             return
 
         identity_file = Path(identity_file).expanduser()
+        if not identity_file.exists():
+            logger.error('SSH setup failed: identity file not found at %s', identity_file)
+            return
 
         self.client = paramiko.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         logger.info(
-            'Attempting to connect to %s:%s as %s...',
+            'SSH setup: connecting to %s:%s as %s',
             hostname,
             port,
             self.username,
@@ -168,16 +175,31 @@ class SshClient:
             self.client.connect(**connect_args, timeout=3)  # Add timeout
         except paramiko.AuthenticationException:
             logger.error(
-                'SSH authentication failed for %s@%s.\nCheck credentials/keys.',
-                hostname,
+                'SSH login failed: %s@%s (authentication)',
                 self.username,
+                hostname,
             )
+            self.client = None
+            return
         except TimeoutError:
-            logger.error('SSH authentication timeout.')
-        except paramiko.SSHException as e:
-            logger.error('Could not establish SSH connection to %s: %s', hostname, e)
+            logger.error(
+                'SSH login timed out: %s@%s',
+                self.username,
+                hostname,
+            )
+            self.client = None
+            return
+        except (paramiko.SSHException, OSError) as e:
+            logger.error('SSH connection error: %s', e)
+            self.client = None
+            return
 
-        logger.info('Connected to %s', hostname)
+        logger.info(
+            'SSH setup: connected to %s:%s as %s',
+            hostname,
+            port,
+            self.username,
+        )
 
     def browse_remote(
         self,
@@ -225,7 +247,7 @@ class SshClient:
             File contents (decoded if requested) or an empty string on failure.
         """
         if not self.client:
-            logger.error('No ssh client setuped.')
+            logger.warning('SSH client unavailable: cannot read %s', remote_path)
             return ''
 
         content = ''
@@ -236,7 +258,7 @@ class SshClient:
                     if decode:
                         content = content.decode('utf-8')
             except FileNotFoundError:
-                logger.error('Remote file not found: %s', remote_path)
+                logger.warning('Remote file missing: %s', remote_path)
                 return ''
             else:
                 return content
@@ -244,7 +266,7 @@ class SshClient:
     def write_to_file(self, remote_path: Path, content: str) -> None:
         """Write `content` to the remote path, overwriting any existing file."""
         if not self.client:
-            logger.error('No ssh client setuped.')
+            logger.warning('SSH client unavailable: cannot write %s', remote_path)
             return
 
         with SftpContext(self.client) as sftp:
@@ -253,7 +275,7 @@ class SshClient:
                 with sftp.open(str(remote_path), 'w') as remote_file:
                     remote_file.write(content)
             except FileNotFoundError:
-                logger.error('Remote directory %s does not exist.', remote_path.parent)
+                logger.warning('Remote directory missing: %s', remote_path.parent)
 
     def path_exists(self, remote_path: Path) -> bool:
         """Return True if the given path exists on the remote host.
@@ -264,7 +286,7 @@ class SshClient:
             True when the remote path can be stat'ed successfully.
         """
         if not self.client:
-            logger.error('No ssh client')
+            logger.warning('SSH client unavailable: cannot stat %s', remote_path)
             return False
 
         with SftpContext(self.client) as sftp:
@@ -284,7 +306,7 @@ class SshClient:
             Decoded stdout, stderr, and exit status of the remote command.
         """
         if not self.client:
-            logger.error('No ssh client.')
+            logger.error('SSH command failed: client not connected')
             return '', '', -1
         try:
             _, stdout, stderr = self.client.exec_command(
@@ -296,14 +318,10 @@ class SshClient:
             stderr_output = stderr.read().decode().strip()
             exit_status = stdout.channel.recv_exit_status()  # Blocks until command finishes
             if stderr_output:
-                logger.warning(
-                    "Command '%s' produced stderr: %s",
-                    command,
-                    stderr_output,
-                )
+                logger.warning('SSH command stderr: %s -> %s', command, stderr_output)
 
         except paramiko.SSHException as e:
-            logger.error("SSH error executing command '%s': %s", command, e)
+            logger.error('SSH command error: %s -> %s', command, e)
             return '', str(e), -1  # Indicate failure
         else:
             return stdout_output, stderr_output, exit_status
@@ -451,7 +469,7 @@ class RemoteFileDialog(tk.Toplevel):
             self.update_list()
         except OSError as e:
             # Common errors: Permission denied, File exists
-            logger.warning('Failed to create directory %s: %s', new_folder_path, e)
+            logger.warning('Remote directory creation failed: %s -> %s', new_folder_path, e)
 
     def _resolve_path(self, path: str) -> str:
         """Get absolute path using sftp.normalize.
@@ -464,7 +482,7 @@ class RemoteFileDialog(tk.Toplevel):
         try:
             return self.sftp.normalize(path)
         except OSError as e:
-            logger.error("Could not resolve path '%s': %s", path, e)
+            logger.warning('Remote path resolution failed: %s -> %s', path, e)
 
         return ''
 
@@ -506,9 +524,9 @@ class RemoteFileDialog(tk.Toplevel):
                 self.listbox.insert(tk.END, display_name)
 
         except OSError as e:
-            logger.error("Cannot list directory '%s':\n%s", self.current_path, e)
+            logger.warning('Remote listing failed: %s -> %s', self.current_path, e)
         except Exception as e:  # noqa: BLE001
-            logger.error('An unexpected error occurred during listing:\n%s', e)
+            logger.error('Remote listing crashed: %s', e)
 
     def go_up(self) -> None:
         """Navigate to the parent directory if possible."""
@@ -522,7 +540,7 @@ class RemoteFileDialog(tk.Toplevel):
                     self.current_path = resolved_parent
                     self.update_list()
             except OSError as e:
-                logger.error('Cannot navigate up:\n%s', e)
+                logger.warning('Remote navigation failed: %s -> %s', parent_path, e)
 
     def on_double_click(self, _event: tk.Event | None = None) -> None:
         """Handle navigation when the user double-clicks an entry."""
@@ -545,9 +563,9 @@ class RemoteFileDialog(tk.Toplevel):
                 self.current_path = self._resolve_path(new_path)  # Resolve the new path
                 self.update_list()
             else:
-                logger.error("'%s' is no longer a directory.", selected_item_display)
+                logger.warning("Remote selection skipped: '%s' is no longer a directory", selected_item_display)
         except OSError as e:
-            logger.error("Cannot access '%s':\n%s", new_path, e)
+            logger.warning("Remote selection failed: '%s' -> %s", new_path, e)
         # else: Item is a file "[F]", do nothing on double-click for directory selection
 
     def select_action(self) -> None:
@@ -568,7 +586,7 @@ class RemoteFileDialog(tk.Toplevel):
                     # Resolve/normalize the path to be sure
                     path_to_select = self._resolve_path(potential_path)
                 except (OSError, RuntimeError) as e:
-                    logger.error('Could not resolve selected directory path:\n%s', e)
+                    logger.warning('Remote selection resolution failed: %s', e)
 
         # If no selection or selected item wasn't a directory, path_to_select remains self.current_path
         self.selected_path = path_to_select
