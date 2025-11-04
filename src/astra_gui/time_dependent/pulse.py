@@ -15,6 +15,7 @@ from astra_gui.utils.notebook_module import NotebookPage
 from astra_gui.utils.popup_module import invalid_input_popup, warning_popup
 from astra_gui.utils.table_module import Table
 
+from .notebook_state import PulseFileData, TdseFileData
 from .td_notebook_page_module import TdNotebookPage
 
 if TYPE_CHECKING:
@@ -320,7 +321,7 @@ class PulseParameterFrame(ttk.Frame, ABC):
     @abstractmethod
     def save(
         self,
-    ) -> tuple[dict[str, str], dict[str, str], Path, Path, dict[str, str]] | None:
+    ) -> tuple[PulseFileData, TdseFileData, Path, Path, dict[str, str]] | None:
         """
         Save the pulse parameters and simulation parameters.
 
@@ -429,12 +430,12 @@ class PumpProbeFrame(PulseParameterFrame):
 
     def save(
         self,
-    ) -> tuple[dict[str, str], dict[str, str], Path, Path, dict[str, str]] | None:
+    ) -> tuple[PulseFileData, TdseFileData, Path, Path, dict[str, str]] | None:
         """Validate the form and return serialized pump-probe inputs.
 
         Returns
         -------
-        tuple[dict[str, str], dict[str, str], Path, Path, dict[str, str]] | None
+        tuple[PulseFileData, TdseFileData, Path, Path, dict[str, str]] | None
             Pulse data, TDSE data, pulse/TDSE file paths, and tabulation mapping.
         """
         required_fields = [
@@ -490,7 +491,7 @@ class PumpProbeFrame(PulseParameterFrame):
 
         pump_probe_pulses = PumpProbePulses(pump, probe, np.arange(min_tau, max_tau + delta_tau, delta_tau))
 
-        pulse_data = {
+        pulse_data: PulseFileData = {
             'type': 'pump/probe',
             'pump_pulses': '\n'.join([pulse.pulse_string() for pulse in pump.pulses]),
             'pump_train': pump.pulses_string(),
@@ -503,7 +504,7 @@ class PumpProbeFrame(PulseParameterFrame):
         intial_time, final_time = pump_probe_pulses.get_initial_and_final_times()
 
         # Tabulates the pump and probe pulses
-        pulse_tabulation = {}
+        pulse_tabulation: dict[str, str] = {}
         for pump_pulse in pump.pulses:
             pulse_tabulation[pump_pulse.name] = pump_pulse.tabulate(
                 intial_time,
@@ -520,7 +521,7 @@ class PumpProbeFrame(PulseParameterFrame):
             )
 
         ######################################
-        tdse_data = {
+        tdse_data: TdseFileData = {
             'pulse_filename': pulse_filename,
             'structure_dir': f'TDSE_input_files_{sim_label}',
             'initial_time': intial_time - PulsePage.DELTA_START_TIME,
@@ -859,12 +860,12 @@ class CustomPulseFrame(PulseParameterFrame):
         self.time_step_entry.insert(0, str(PulsePage.TIME_STEP))
         self.save_time_step_entry.insert(0, str(PulsePage.SAVE_TIME_STEP))
 
-    def save(self) -> tuple[dict[str, str], dict[str, str], Path, Path, dict[str, str]] | None:
+    def save(self) -> tuple[PulseFileData, TdseFileData, Path, Path, dict[str, str]] | None:
         """Validate the form and return serialized custom pulse inputs.
 
         Returns
         -------
-        tuple[dict[str, str], dict[str, str], Path, Path, dict[str, str]] | None
+        tuple[PulseFileData, TdseFileData, Path, Path, dict[str, str]] | None
             Pulse data, TDSE data, file paths, and tabulation mapping.
         """
         pulse_data = self.pulse_table.get().T
@@ -878,7 +879,7 @@ class CustomPulseFrame(PulseParameterFrame):
             [Pulse(pulse_data[0], f'pulse_{n}', *pulse_data[1:]) for n, pulse_data in enumerate(pulse_data)],
         )
 
-        pulse_data = {
+        pulse_data: PulseFileData = {
             'type': 'custom',
             'pulses': '\n'.join([pulse.pulse_string() for pulse in pulses.pulses]),
             'pulses_train': pulses.pulses_string(),
@@ -901,7 +902,7 @@ class CustomPulseFrame(PulseParameterFrame):
         if not (required_fields := self.check_field_entries(required_fields)):
             return None
 
-        tdse_data = {
+        tdse_data: TdseFileData = {
             'pulse_filename': pulse_filename,
             'structure_dir': f'TDSE_input_files_{self.sim_label_entry.get()}',
             'initial_time': required_fields['Initial time'],
@@ -915,7 +916,7 @@ class CustomPulseFrame(PulseParameterFrame):
         tdse_filename = f'{PulsePage.BASE_TDSE_FILE}_{self.sim_label_entry.get()}'
 
         # Tabulates the pulses
-        pulse_tabulation = {}
+        pulse_tabulation: dict[str, str] = {}
         for pulse in pulses.pulses:
             pulse_tabulation[pulse.name] = pulse.tabulate(
                 tdse_data['initial_time'],
@@ -1135,6 +1136,10 @@ class PulsePage(TdNotebookPage):
             return
 
         pulse_data, tdse_data, pulse_file_path, tdse_file_path, pulse_tabulation = ret
+
+        self.notebook.state['pulse_data'] = pulse_data
+        self.notebook.state['tdse_data'] = tdse_data
+        self.notebook.state['pulse_tabulation'] = pulse_tabulation
 
         if self.sim_type_combo.get() == 'Pump-probe':
             self.save_file(self.PUMP_PROBE_FILE, pulse_data, new_file_name=pulse_file_path)

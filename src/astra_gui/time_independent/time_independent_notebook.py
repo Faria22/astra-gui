@@ -2,7 +2,6 @@
 
 import logging
 import re
-from collections import defaultdict
 from tkinter import ttk
 from typing import TYPE_CHECKING, cast
 
@@ -10,6 +9,7 @@ import numpy as np
 
 from astra_gui.utils.notebook_module import Notebook
 
+from .notebook_state import CapStrengths, TimeIndependentState
 from .pad import Pad
 from .scatt_states import ScattStates
 from .structural import Structural
@@ -29,6 +29,8 @@ class TimeIndependentNotebook(Notebook[TiNotebookPage]):
         """Initialise the notebook and register default pages."""
         super().__init__(parent, controller, 'Run Time Independent Programs')
 
+        self.state: TimeIndependentState = TimeIndependentState()
+
         self.reset()
 
         self.add_pages([Structural, ScattStates, Pad])
@@ -40,22 +42,23 @@ class TimeIndependentNotebook(Notebook[TiNotebookPage]):
 
     def show_cap_radii(self, radii: list[str]) -> None:
         """Propagate CAP radii values to each child page."""
+        self.state['cap_radii'] = radii
         for notebook_page in self.pages:
             notebook_page.show_cap_radii(radii)
 
-    def get_cap_strengths(self, group_syms: bool = True, return_float: bool = False) -> dict[str, list]:
+    def get_cap_strengths(self, group_syms: bool = True, return_float: bool = False) -> CapStrengths:
         """Read CAP strengths from disk and optionally group them by symmetry.
 
         Returns
         -------
-        dict[str, list]
+        CapStrengths
             CAP strengths grouped by symmetry label.
         """
-        cap_strengths: dict[str, list] = defaultdict(list)
+        cap_strengths: CapStrengths = {}
 
         state_syms = self.pages[0].get_computed_syms()
         if not state_syms:
-            return {}
+            return cast(CapStrengths, {})
 
         mult = state_syms[0][0]
 
@@ -86,8 +89,7 @@ class TimeIndependentNotebook(Notebook[TiNotebookPage]):
 
                     match = file_pattern_regex.search(str_path)
                     if match:
-                        strengths = match.groups()
-                        strengths = []
+                        strengths: list[str | float] = []
                         for group in match.groups():
                             strength = group.strip().replace('D', 'e')
                             strength = float(strength)
@@ -98,7 +100,7 @@ class TimeIndependentNotebook(Notebook[TiNotebookPage]):
                                     strengths.append(str(f'{strength:.1e}'))
                             else:
                                 strengths.append(strength)
-                        cap_strengths[state_sym].append(strengths)
+                        cap_strengths.setdefault(state_sym, []).append(strengths)
 
         if group_syms:
             cap_strengths = self.group_cap_strengths_by_sym(cap_strengths, mult=mult)
@@ -108,36 +110,38 @@ class TimeIndependentNotebook(Notebook[TiNotebookPage]):
     def show_cap_strengths(self) -> None:
         """Broadcast CAP strengths to every notebook page."""
         cap_strengths = self.get_cap_strengths()
+        self.state['cap_strengths'] = cap_strengths
         for notebook_page in self.pages:
             notebook_page.show_cap_strengths(cap_strengths)
 
     @staticmethod
-    def group_cap_strengths_by_sym(cap_strengths: dict[str, list], mult: str) -> dict[str, list]:
+    def group_cap_strengths_by_sym(cap_strengths: CapStrengths, mult: str) -> CapStrengths:
         """Group CAP strengths by symmetry, consolidating shared values.
 
         Returns
         -------
-        dict[str, list]
+        CapStrengths
             CAP strengths reorganised by symmetry, including shared entries.
         """
-        new_cap_strengths: dict[str, list] = defaultdict(list)
+        new_cap_strengths: CapStrengths = {}
 
-        all_strengths = []
-        other_sym_strengths = defaultdict(list)
+        all_strengths: list[list[str | float]] = []
+        other_sym_strengths: CapStrengths = {}
 
         for i_sym, i_strengths_list in cap_strengths.items():
-            flag = True
             for i_strengths in i_strengths_list:
+                shared_across_all = True
                 for j_sym, j_strengths_list in cap_strengths.items():
                     if i_sym == j_sym:
                         continue
 
                     if i_strengths not in j_strengths_list:
-                        flag = False
-                        if i_strengths not in other_sym_strengths[i_sym]:
-                            other_sym_strengths[i_sym].append(i_strengths)
+                        shared_across_all = False
+                        other_list = other_sym_strengths.setdefault(i_sym, [])
+                        if i_strengths not in other_list:
+                            other_list.append(i_strengths)
 
-                if flag and i_strengths not in all_strengths:
+                if shared_across_all and i_strengths not in all_strengths:
                     all_strengths.append(i_strengths)
 
         new_cap_strengths[f'{mult}ALL'] = all_strengths
@@ -146,7 +150,13 @@ class TimeIndependentNotebook(Notebook[TiNotebookPage]):
     def show_cc_data(self, cc_syms: list[str], target_states_data: np.ndarray, open_channels: list[bool]) -> None:
         """Update all pages with the latest close-coupling target states."""
         TiNotebookPage.cc_syms = cc_syms
-        TiNotebookPage.computed_syms = self.pages[0].get_computed_syms()
+        computed_syms = self.pages[0].get_computed_syms()
+        TiNotebookPage.computed_syms = computed_syms
+
+        self.state['cc_syms'] = cc_syms
+        self.state['computed_syms'] = computed_syms
+        self.state['target_states_data'] = target_states_data
+        self.state['open_channels'] = open_channels
 
         for notebook_page in self.pages:
             notebook_page.show_cc_data(target_states_data, open_channels)
@@ -154,9 +164,13 @@ class TimeIndependentNotebook(Notebook[TiNotebookPage]):
     def reset(self) -> None:
         """Refresh cached close-coupling data and reset each page."""
         create_cc_notebook = cast('CreateCcNotebook', self.controller.notebooks[1])
-        TiNotebookPage.cc_syms = cast(
-            list[str],
-            create_cc_notebook.cc_data['total_syms'],
-        )
+        cc_syms = cast(list[str], create_cc_notebook.cc_data['total_syms'])
+        TiNotebookPage.cc_syms = cc_syms
+
+        self.state.clear()
+        self.state['cap_strengths'] = cast(CapStrengths, {})
+        self.state['cap_radii'] = []
+        self.state['cc_syms'] = cc_syms
+        self.state['computed_syms'] = []
 
         self.erase()
