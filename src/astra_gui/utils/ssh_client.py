@@ -1,21 +1,16 @@
 """SSH utilities for interacting with remote hosts from the GUI."""
 
-from __future__ import annotations
-
 import logging
 import stat  # For checking file types (S_ISDIR)
 import tkinter as tk
 from pathlib import Path
 from tkinter import messagebox, simpledialog, ttk
-from typing import TYPE_CHECKING
+from types import TracebackType
 
 import paramiko
 
 from .config_module import get_ssh_host, set_ssh_host
 from .logger_module import log_operation
-
-if TYPE_CHECKING:
-    from types import TracebackType
 
 logger = logging.getLogger(__name__)
 

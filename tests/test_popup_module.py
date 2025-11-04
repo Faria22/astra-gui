@@ -1,17 +1,13 @@
 """Tests for popup helpers that wrap tkinter messagebox/filedialog."""
 
-from __future__ import annotations
-
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import pytest
 
 from tests.conftest import DialogSpy
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
 try:
     from astra_gui.utils import popup_module

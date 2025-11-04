@@ -1,16 +1,11 @@
 """Command-line interface for launching the ASTRA GUI."""
 
-from __future__ import annotations
-
 import argparse
 import sys
-from typing import TYPE_CHECKING
+from collections.abc import Sequence
 
 from astra_gui.app import Astra
 from astra_gui.utils.logger_module import setup_logger
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
 
 
 def build_parser() -> argparse.ArgumentParser:

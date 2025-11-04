@@ -1,24 +1,15 @@
 """Shared pytest fixtures for ASTRA GUI tests."""
 
-from __future__ import annotations
-
 import io
 import types
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from functools import partialmethod
+from pathlib import Path
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 import pytest
-
-if TYPE_CHECKING:
-    from collections.abc import Iterator
-    from pathlib import Path
-    from tkinter import Tk
-else:
-    Iterator = Any  # type: ignore[assignment]
-    Path = Any  # type: ignore[assignment]
-    Tk = Any  # type: ignore[assignment]
 
 try:
     import tkinter as tk
@@ -27,6 +18,11 @@ except ImportError:  # pragma: no cover - handled in fixtures
     tk = None  # type: ignore[assignment]
     filedialog = None  # type: ignore[assignment]
     messagebox = None  # type: ignore[assignment]
+
+if TYPE_CHECKING:
+    from tkinter import Tk as TkWidget
+else:
+    TkWidget = Any  # type: ignore[assignment]
 
 try:
     import paramiko
@@ -38,7 +34,7 @@ except ImportError:  # pragma: no cover - optional dependency for tests
 
 
 @pytest.fixture
-def tk_root() -> Iterator[Tk]:
+def tk_root() -> Iterator[TkWidget]:
     """Return a withdrawn Tk root with captured tkinter `after` callbacks.
 
     Yields
@@ -415,7 +411,7 @@ def config_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return config_root
 
 
-def _tk_after(root: Tk, _delay: int, callback: Any | None = None, *args: Any) -> str | None:
+def _tk_after(root: TkWidget, _delay: int, callback: Any | None = None, *args: Any) -> str | None:
     """Schedule callbacks immediately for the withdrawn Tk root.
 
     Returns
@@ -433,7 +429,7 @@ def _tk_after(root: Tk, _delay: int, callback: Any | None = None, *args: Any) ->
     return f'after#{len(scheduled)}'
 
 
-def _tk_run_after_callbacks(root: Tk, count: int | None = None) -> None:
+def _tk_run_after_callbacks(root: TkWidget, count: int | None = None) -> None:
     """Execute pending callbacks on the withdrawn Tk root."""
     scheduled = getattr(root, 'astra_scheduled_callbacks', [])
     executed = 0

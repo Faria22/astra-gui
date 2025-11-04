@@ -1,7 +1,5 @@
 """Tests for the status bar widget that queues messages."""
 
-from __future__ import annotations
-
 import sys
 import types
 from pathlib import Path
