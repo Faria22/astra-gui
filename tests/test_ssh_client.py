@@ -1,7 +1,5 @@
 """Tests for the SSH client utilities used by the GUI."""
 
-from __future__ import annotations
-
 import sys
 from pathlib import Path
 from typing import Any, cast

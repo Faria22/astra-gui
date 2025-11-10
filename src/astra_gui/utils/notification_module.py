@@ -1,7 +1,5 @@
 """Helpers for configuring notification hooks used by the GUI."""
 
-from __future__ import annotations
-
 import logging
 from tkinter import messagebox
 

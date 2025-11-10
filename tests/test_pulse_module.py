@@ -1,7 +1,5 @@
 """Unit tests for time-dependent pulse utilities."""
 
-from __future__ import annotations
-
 import math
 import sys
 from pathlib import Path
