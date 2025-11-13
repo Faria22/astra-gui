@@ -657,6 +657,8 @@ class Lucia(CcNotebookPage):
         """
         table = self.sa_states_table if sa else self.states_table
         states_data = table.get()
+        logger.debug('States data type: %s', states_data.dtype)
+        logger.debug('States data retrieved from table: %s', states_data)
 
         # Check for empty and partially filled rows
         # states_data is shape (num_columns, num_rows), so transpose to work with rows
@@ -713,9 +715,6 @@ class Lucia(CcNotebookPage):
             np.lexsort((states_data[:, sym_ind + 1], states_data[:, sym_ind])),
             :,
         ]
-
-        # Convert all data to string for serialisation
-        states_data = states_data.astype(str)
 
         if not sa:
             lines = [f'{states_data.shape[0]}'] + [' '.join(state) for state in states_data]

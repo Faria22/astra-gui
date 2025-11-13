@@ -46,8 +46,7 @@ class Table:
             col_types = [col_types] * self.num_cols
         elif len(col_types) != self.num_cols:  # If not a string, then it's a list
             raise ValueError(
-                f'Table configuration invalid: expected {self.num_cols} column types, '
-                f'received {len(col_types)}',
+                f'Table configuration invalid: expected {self.num_cols} column types, received {len(col_types)}',
             )
 
         # If not combobox value list was given, make it an empty list
@@ -200,7 +199,7 @@ class Table:
         for i in range(self.num_cols):
             for j in range(self.length):
                 data[i, j] = self.columns[i][j].get()
-        return data
+        return data.astype(str)
 
     def put(self, data: np.ndarray) -> None:
         """Populate the table with the provided data array.
@@ -219,8 +218,6 @@ class Table:
             for j, cell in enumerate(column):
                 self.columns[i][j].delete(0, tk.END)
                 self.columns[i][j].insert(0, cell)
-
-        self.get()
 
     def add_combobox_values_list(self, combobox_values_list: list[list[str]]) -> None:
         """Assign value lists to combobox columns, defaulting entries to empty lists."""

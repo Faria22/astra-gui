@@ -1,9 +1,8 @@
 """Tests for the status bar widget that queues messages."""
 
-from __future__ import annotations
-
 import sys
 import types
+from collections import deque
 from pathlib import Path
 from typing import Any
 
@@ -55,7 +54,7 @@ def make_status_bar(default: str = 'Ready') -> tuple[StatusBar, DummyRoot]:
     status = StatusBar.__new__(StatusBar)
     status.root = root  # type: ignore[attr-defined]
     status.default_message = default  # type: ignore[attr-defined]
-    status.message_queue = []  # type: ignore[attr-defined]
+    status.message_queue = deque()  # type: ignore[attr-defined]
     status.is_displaying_message = False  # type: ignore[attr-defined]
     status.status_text = default  # type: ignore[attr-defined]
 
@@ -110,7 +109,7 @@ def test_overwrite_default_text_persists_value() -> None:
 
 
 def test_message_queue_processes_last_in_first_out() -> None:
-    """Queued messages should be processed in reverse order of arrival."""
+    """Queued messages should be processed in arrival order."""
     status, root = make_status_bar('Idle')
 
     status.show_message('first')
@@ -118,15 +117,15 @@ def test_message_queue_processes_last_in_first_out() -> None:
     status.show_message('third')
 
     assert status.cget('text') == 'first'
-    assert status.message_queue == [('second', 0), ('third', 0)]
-
-    root.run_after(count=1)
-    assert status.cget('text') == 'third'
-    assert status.message_queue == [('second', 0)]
+    assert list(status.message_queue) == [('second', 0), ('third', 0)]
 
     root.run_after(count=1)
     assert status.cget('text') == 'second'
-    assert status.message_queue == []
+    assert list(status.message_queue) == [('third', 0)]
+
+    root.run_after(count=1)
+    assert status.cget('text') == 'third'
+    assert list(status.message_queue) == []
 
     root.run_after(count=1)
     assert status.cget('text') == 'Idle'

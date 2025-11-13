@@ -22,7 +22,7 @@ Tkinter is bundled with some Python distributions but not all. The GUI will not 
 - If you installed Python from [python.org](https://www.python.org/downloads/), Tkinter is already included—no extra action required.
 - For Homebrew Python, install the matching Tk bindings:
 
-  ```console
+  ```bash
   brew install python-tk
   ```
 
@@ -32,20 +32,20 @@ Tkinter is bundled with some Python distributions but not all. The GUI will not 
 
 - Debian/Ubuntu and derivatives:
 
-  ```console
+  ```bash
   sudo apt-get update
   sudo apt-get install python3-tk
   ```
 
 - Fedora/RHEL and derivatives:
 
-  ```console
+  ```bash
   sudo dnf install python3-tkinter
   ```
 
 - Arch Linux:
 
-  ```console
+  ```bash
   sudo pacman -S tk
   ```
 
@@ -55,7 +55,7 @@ Refer to your distribution’s package manager if it uses different names.
 
 After installation, confirm Tkinter works by launching the self-test. A small window labeled “Tk” should appear.
 
-```console
+```bash
 python3 -m tkinter
 ```
 
@@ -65,7 +65,7 @@ If you receive `ModuleNotFoundError: No module named '_tkinter'`, reinstall Tkin
 
 Install the latest release from PyPI:
 
-```console
+```bash
 pip install astra_gui
 ```
 
@@ -73,7 +73,7 @@ pip install astra_gui
 
 Once installed, run ASTRA GUI from the terminal:
 
-```console
+```bash
 astra_gui
 ```
 
@@ -96,7 +96,7 @@ Detailed walkthroughs live in the GUI under **Help** in the menu bar.
 
 Clone the repository and install the project in development mode:
 
-```console
+```bash
 git clone https://github.com/Faria22/astra_gui.git
 cd astra_gui
 pip install -e .[dev]
@@ -104,7 +104,7 @@ pip install -e .[dev]
 
 Use Hatch to run the standard quality checks:
 
-```console
+```bash
 hatch run all   # Ruff, basedpyright, and pytest
 ```
 

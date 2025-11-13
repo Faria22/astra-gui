@@ -1,15 +1,11 @@
 """Helpers for reading and writing the ASTRA GUI configuration file."""
 
-from __future__ import annotations
-
 import logging
 import os
 import sys
+from collections.abc import Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
+from typing import Any
 
 import toml
 

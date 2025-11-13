@@ -1,10 +1,9 @@
 """Tests for the shared ASTRA GUI configuration file."""
 
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+
+import pytest
 
 try:
     from astra_gui.utils import config_module
@@ -13,9 +12,6 @@ except ModuleNotFoundError:
     if str(SRC_PATH) not in sys.path:
         sys.path.insert(0, str(SRC_PATH))
     from astra_gui.utils import config_module
-
-if TYPE_CHECKING:
-    import pytest
 
 
 def _set_config_dir(monkeypatch: pytest.MonkeyPatch, directory: Path) -> None:
