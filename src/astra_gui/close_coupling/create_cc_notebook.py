@@ -1,7 +1,7 @@
 """Notebook that groups pages used to set up close-coupling calculations."""
 
 from tkinter import ttk
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, TypedDict
 
 from astra_gui.utils.notebook_module import Notebook
 
@@ -11,7 +11,6 @@ from .clscplng import Clscplng
 from .dalton import Dalton
 from .lucia import Lucia
 from .molecule import Molecule
-from .notebook_state import CcData, DaltonData, LuciaData, MoleculeData
 
 if TYPE_CHECKING:
     from astra_gui.app import Astra
@@ -37,23 +36,79 @@ class CreateCcNotebook(Notebook[CcNotebookPage]):
         """Reset shared data structures and clear each page."""
         # Defines default values for those that need to be shared across notebookPages
         self.molecule_data = MoleculeData(
-            basis='6-311G',
-            description='',
             accuracy='1.00D-10',
             units='Angstrom',
             number_atoms=0,
             linear_molecule=False,
             generators='',
+            geom_label='',
+            atoms_data='',
+            num_diff_atoms=0,
         )
-        self.dalton_data = DaltonData(ref_sym=1, doubly_occupied='')
+        self.dalton_data = DaltonData(
+            basis='6-311G',
+            description='',
+            doubly_occupied='',
+            orbital_energies='',
+            state_sym=0,
+            multiplicity=0,
+            electrons=0,
+            doubly='',
+            singly='',
+        )
         self.lucia_data = LuciaData(
             lcsblk=106968,
             electrons=0,
-            total_orbitals=cast(list[str], []),
-            states=cast(list[str], []),
-            energies=cast(list[str], []),
-            relative_energies=cast(list[str], []),
+            total_orbitals=[],
+            states=[],
+            energies=[],
+            relative_energies=[],
         )
-        self.cc_data = CcData(lmax=3, total_syms=cast(list[str], []))
+        self.cc_data = CcData(lmax=3, total_syms=[])
 
         self.erase()
+
+
+class MoleculeData(TypedDict):
+    """Shared molecular metadata tracked across close-coupling pages."""
+
+    accuracy: str
+    units: str
+    number_atoms: int
+    linear_molecule: bool
+    generators: str
+    geom_label: str
+    atoms_data: str
+    num_diff_atoms: int
+
+
+class DaltonData(TypedDict):
+    """State propagated between Dalton configuration steps and outputs."""
+
+    basis: str
+    description: str
+    doubly_occupied: str
+    orbital_energies: str
+    state_sym: int
+    multiplicity: int
+    electrons: int
+    doubly: str
+    singly: str
+
+
+class LuciaData(TypedDict):
+    """Aggregated Lucia calculation configuration and results."""
+
+    lcsblk: int
+    electrons: int
+    total_orbitals: list[str]
+    states: list[str]
+    energies: list[str]
+    relative_energies: list[str]
+
+
+class CcData(TypedDict):
+    """Close-coupling metadata shared with downstream notebooks."""
+
+    lmax: int
+    total_syms: list[str]

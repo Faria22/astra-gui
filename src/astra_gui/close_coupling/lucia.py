@@ -487,7 +487,7 @@ class Lucia(CcNotebookPage):
             self.electrons_entry.insert(0, str(act_electrons))
 
         if lcsblk := get_value('LCSBLK'):
-            self.notebook.lucia_data['lcsblk'] = lcsblk
+            self.notebook.lucia_data['lcsblk'] = int(lcsblk)
 
         if musymu_line_ind := find_line_ind('MUSYMU'):
             states_data = self.load_states_data(lines, musymu_line_ind + 1)
@@ -749,14 +749,11 @@ class Lucia(CcNotebookPage):
         str
             Title block describing geometry, basis, and description.
         """
-        title_lines = cast(
-            list[str],
-            [
-                self.notebook.molecule_data['geom_label'],
-                self.notebook.molecule_data['basis'],
-                self.notebook.molecule_data['description'],
-            ],
-        )
+        title_lines = [
+            self.notebook.molecule_data['geom_label'],
+            self.notebook.dalton_data['basis'],
+            self.notebook.dalton_data['description'],
+        ]
 
         return '\n'.join(title_lines)
 
@@ -791,7 +788,7 @@ class Lucia(CcNotebookPage):
             'active': ','.join(str(orb) for orb in act_orbs),
             'electrons': active_electrons,
             'musymu': musymu,
-            'ref_sym': self.notebook.dalton_data['ref_sym'],
+            'ref_sym': self.notebook.dalton_data['state_sym'],
             'roots': max_number_roots + 1,
             'lcsblk': self.notebook.lucia_data['lcsblk'],
             'title': self.get_title(),

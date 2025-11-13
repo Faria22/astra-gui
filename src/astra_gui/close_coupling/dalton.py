@@ -21,6 +21,7 @@ class Dalton(CcNotebookPage):
     """Notebook page for configuring and running Dalton calculations."""
 
     DALTON_FILE = Path('DALTON.INP')
+    MOLECULE_FILE = Path('MOLECULE.INP')
     OUTPUT_FILE = Path('QC/DALTON.OUT')
     SCRIPT_COMMANDS = ['dalton.x']
 
@@ -185,6 +186,7 @@ class Dalton(CcNotebookPage):
 
     def load(self) -> None:
         """Load Dalton configuration from disk and update widgets."""
+
         def fill_occ_orbs_entries(occupied: list[str], row: int) -> None:
             for col, occ in enumerate(occupied, start=2):
                 widget = cast(ttk.Entry, self.get_widget_from_grid(self.occupied_orbs_frame, row, col))
@@ -202,12 +204,12 @@ class Dalton(CcNotebookPage):
         get_value = partial(self.get_value_from_lines, lines)
 
         # Pulls this info from MOLECULE.INP
-        self.basis_combo.set(self.notebook.molecule_data['basis'])
+        self.basis_combo.set(self.notebook.dalton_data['basis'])
 
         self.description_entry.delete(0, tk.END)
         self.description_entry.insert(
             0,
-            str(self.notebook.molecule_data['description']),
+            str(self.notebook.dalton_data['description']),
         )
 
         self.accuracy_entry.delete(0, tk.END)
@@ -223,11 +225,11 @@ class Dalton(CcNotebookPage):
 
         if multiplicity := get_value('.SPIN MULTIPLICITY'):
             self.multiplicity_entry.insert(0, multiplicity)
-            self.notebook.dalton_data['multiplicity'] = multiplicity
+            self.notebook.dalton_data['multiplicity'] = int(multiplicity)
 
         if sym_ind := int(get_value('.SYMMETRY')):
             self.symmetry_combo.current(sym_ind - 1)
-            self.notebook.dalton_data['ref_sym'] = sym_ind
+            self.notebook.dalton_data['state_sym'] = sym_ind
 
         if electrons := get_value('.ELECTRONS'):
             self.electrons_entry.insert(0, electrons)
@@ -288,6 +290,7 @@ class Dalton(CcNotebookPage):
 
     def save(self) -> None:
         """Validate entries and write updated Dalton inputs to disk."""
+
         def get_occ_orb_entries(ind: int) -> str:
             occupied: list[str] = []
             for col in range(2, len(self.sym.irrep) + 1):
@@ -303,10 +306,15 @@ class Dalton(CcNotebookPage):
             return ' '.join(occupied)
 
         # Updates molecule_data and save new MOLECULE.INP files
-        self.notebook.molecule_data['basis'] = self.basis_combo.get()
-        self.notebook.molecule_data['description'] = self.description_entry.get()
+        self.notebook.dalton_data['basis'] = self.basis_combo.get()
+        self.notebook.dalton_data['description'] = self.description_entry.get()
 
-        self.save_file(Path('MOLECULE.INP'), self.notebook.molecule_data, '!', blank_lines=False)
+        self.save_file(
+            self.MOLECULE_FILE,
+            {**self.notebook.molecule_data, **self.notebook.dalton_data},
+            '!',
+            blank_lines=False,
+        )
 
         required_fields = [
             ('symmetry', self.symmetry_combo, str),
@@ -318,14 +326,12 @@ class Dalton(CcNotebookPage):
             return
 
         # Saving DALTON.INP
-        self.notebook.dalton_data['symmetry'] = self.sym.irrep.index(
+        self.notebook.dalton_data['state_sym'] = self.sym.irrep.index(
             cast(str, required_field_values['symmetry']),
         )
 
-        self.notebook.dalton_data['multiplicity'] = str(
-            required_field_values['multiplicity'],
-        )
-        self.notebook.dalton_data['electrons'] = str(required_field_values['electrons'])
+        self.notebook.dalton_data['multiplicity'] = int(required_field_values['multiplicity'])
+        self.notebook.dalton_data['electrons'] = int(required_field_values['electrons'])
 
         for occ_ind, occ_option in enumerate(['doubly', 'singly']):
             if self.occupied_orb_vars[occ_ind].get():
