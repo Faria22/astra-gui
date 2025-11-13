@@ -7,10 +7,13 @@ from typing import Any, cast
 
 import numpy as np
 
+from tests.dummy_table import DummyTable
+
 # Lucia depends on the optional moulden visualiser; provide a lightweight stub.
 stub_module = ModuleType('moldenViz')
 cast(Any, stub_module).Plotter = None
 sys.modules.setdefault('moldenViz', stub_module)
+
 
 try:
     from astra_gui.close_coupling.lucia import Lucia
@@ -23,30 +26,22 @@ except ModuleNotFoundError:
 
 def test_get_states_data_serialises_numeric_fields() -> None:
     """Numeric symmetry codes should be coerced to strings during save."""
-
-    class DummyTable:
-        def __init__(self, data: np.ndarray) -> None:
-            self._data = data
-
-        def get(self) -> np.ndarray:
-            return self._data
-
     lucia = Lucia.__new__(Lucia)
     lucia.sym = cast(Any, SimpleNamespace(irrep=['ALL', 'A1']))
     lucia.notebook = cast(Any, SimpleNamespace(lucia_data={}))
-    lucia.states_table = cast(
-        Any,
-        DummyTable(
-            np.array(
-                [
-                    ['A1'],
-                    [1],
-                    [1],
-                ],
-                dtype=object,
-            ),
-        ),
+
+    states_table = DummyTable(num_cols=3)
+    table_data = np.array(
+        [
+            ['A1'],
+            [1],
+            [1],
+        ],
+        dtype=object,
     )
+    states_table.put(table_data)
+
+    lucia.states_table = cast(Any, states_table)
     lucia.unpack_all_sym = Lucia.unpack_all_sym.__get__(lucia, Lucia)
 
     _, serialized = lucia.get_states_data()
