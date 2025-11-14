@@ -4,15 +4,17 @@ import logging
 import re
 import tkinter as tk
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from pathlib import Path
 from tkinter import filedialog, ttk
-from typing import TYPE_CHECKING, Any, cast, overload
+from typing import TYPE_CHECKING, Any, overload
 
 import numpy as np
 
 from astra_gui.utils.font_module import bold_font
 from astra_gui.utils.notebook_module import NotebookPage
 from astra_gui.utils.popup_module import invalid_input_popup, warning_popup
+from astra_gui.utils.required_fields_module import RequiredFields
 from astra_gui.utils.table_module import Table
 
 from .td_notebook_page_module import TdNotebookPage
@@ -181,10 +183,7 @@ class Pulse:
         times = np.arange(initial_time, final_time + dt, dt)
         pulse_values = self.eval_pulse(times)
 
-        lines = [
-            f'{t} {pulse_value}'
-            for t, pulse_value in zip(times, pulse_values)
-        ]
+        lines = [f'{t} {pulse_value}' for t, pulse_value in zip(times, pulse_values)]
 
         return '\n'.join(lines)
 
@@ -444,13 +443,26 @@ class PumpProbeFrame(PulseParameterFrame):
             ('Simulation label', self.sim_label, str),
         ]
 
-        if not (required_fields := self.check_field_entries(required_fields)):
+        @dataclass
+        class PumpProbeRequiredFields(RequiredFields):
+            minimum_time_delay: float = 0.0
+            maximum_time_delay: float = 0.0
+            time_delay_spacing: float = 0.0
+            simulation_label: str = ''
+            minimum_time_delay_widget: ttk.Entry = self.min_tau
+            maximum_time_delay_widget: ttk.Entry = self.max_tau
+            time_delay_spacing_widget: ttk.Entry = self.delta_tau
+            simulation_label_widget: ttk.Entry = self.sim_label
+
+        required_fields = PumpProbeRequiredFields()
+
+        if not required_fields.check_fields():
             return None
 
-        min_tau = cast(float, required_fields['Minimum time-delay'])
-        max_tau = cast(float, required_fields['Maximum time-delay'])
-        delta_tau = cast(float, required_fields['Time-delay spacing'])
-        sim_label = required_fields['Simulation label']
+        min_tau = required_fields.minimum_time_delay
+        max_tau = required_fields.maximum_time_delay
+        delta_tau = required_fields.time_delay_spacing
+        sim_label = required_fields.simulation_label
 
         pump_data = self.pump_table.get().T
         probe_data = self.probe_table.get().T
@@ -958,6 +970,7 @@ class CustomPulseFrame(PulseParameterFrame):
         tuple[str, str, str, str, str]
             Initial time, final time, final pulse time, time step, and save interval.
         """
+
         def extract_value(line: str) -> str:
             return line.split('=')[1].strip()
 
