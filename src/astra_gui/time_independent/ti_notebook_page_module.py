@@ -15,8 +15,6 @@ from astra_gui.utils.notebook_module import NotebookPage
 from astra_gui.utils.popup_module import missing_symmetry_popup, required_field_popup
 from astra_gui.utils.scrollable_module import ScrollableFrame, ScrollableTreeview
 
-from .notebook_state import CapStrengths
-
 if TYPE_CHECKING:
     from .time_independent_notebook import TimeIndependentNotebook
 
@@ -166,14 +164,13 @@ class TiNotebookPage(NotebookPage['TimeIndependentNotebook'], ABC):
         """Update the CAP radii label using the provided values."""
         self.cap_radii_label.config(text=f'Cap Radii [au]: {", ".join(cap_radii)}')
 
-    def show_cap_strengths(self, cap_strengths: CapStrengths) -> None:
+    def show_cap_strengths(self, cap_strengths: dict[str, list]) -> None:
         """Update the CAP strengths label with formatted values."""
         text = 'Cap Strengths [au]:\n'
         for state_sym, strengths_list in cap_strengths.items():
             text += f'\n{state_sym}:'
             for strengths in strengths_list:
-                formatted_strengths = ', '.join(str(value) for value in strengths)
-                text += f'\t{formatted_strengths}\n'
+                text += f'\t{", ".join(strengths)}\n'
 
         self.cap_strenghts_label.config(text=text)
 

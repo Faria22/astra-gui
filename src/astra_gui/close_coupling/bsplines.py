@@ -15,6 +15,7 @@ from astra_gui.utils.popup_module import (
     required_field_popup,
     warning_popup,
 )
+from astra_gui.utils.required_fields_module import RequiredFields
 
 from .cc_notebook_page_module import CcNotebookPage
 from .clscplng import Clscplng
@@ -171,20 +172,29 @@ class Bsplines(CcNotebookPage):
     def save(self) -> None:
         """Validate the current configuration and write all required input files."""
         # Saving EXTERNAL_BASIS_BSPLINES.INP
-        required_fields = [
-            ('box size', self.box_size_entry, float),
-            ('number of bsplines', self.num_bspline_entry, int),
-            ('bspline order', self.bspline_order_entry, int),
-            ('inner box size', self.inner_box_size_entry, float),
-            ('mask radius', self.mask_radius_entry, float),
-            ('mask width', self.mask_width_entry, float),
-        ]
 
-        if not (required_field_values := self.check_field_entries(required_fields)):
+        class BsplineRequiredFields(RequiredFields):
+            box_size: float
+            num_bsplines: int
+            bspline_order: int
+            inner_box_size: float
+            mask_radius: float
+            mask_width: float
+
+            box_size_widget = self.box_size_entry
+            number_of_bsplines_widget = self.num_bspline_entry
+            bspline_order_widget = self.bspline_order_entry
+            inner_box_size_widget = self.inner_box_size_entry
+            mask_radius_widget = self.mask_radius_entry
+            mask_width_widget = self.mask_width_entry
+
+        required_fields = BsplineRequiredFields()
+
+        if not required_fields.check_fields():
             return
 
-        box_size = float(required_field_values['box size'])
-        mask_radius = float(required_field_values['mask radius'])
+        box_size = required_fields.box_size
+        mask_radius = required_fields.mask_radius
 
         cap_radii = [self.get_text_from_widget(e) for e in [self.cap_r1_entry, self.cap_r2_entry]]
         cap_radii = [r for r in cap_radii if r]  # Removes empty strings
@@ -223,22 +233,28 @@ class Bsplines(CcNotebookPage):
             'cap_radii': ','.join(cap_radii),
             'mask_radius': mask_radius,
             'plot_basis': str(self.plot_var.get())[0],
-            'mask_width': required_field_values['mask width'],
+            'mask_width': required_fields.mask_width,
         }
 
         if self.plot_var.get():
-            required_fields = [
-                ('number of plot points', self.num_plot_points_entry, int),
-                ('minimum R for plotting', self.r_min_plot_entry, float),
-                ('maximum R for plotting', self.r_max_plot_entry, float),
-            ]
 
-            if not (required_plot_values := self.check_field_entries(required_fields)):
+            class PlotRequiredFields(RequiredFields):
+                number_of_plot_points: int
+                r_min_plot: float
+                r_max_plot: float
+
+                number_of_plot_points_widget = self.num_plot_points_entry
+                r_min_plot_widget = self.r_min_plot_entry
+                r_max_plot_widget = self.r_max_plot_entry
+
+            required_plot_fields = PlotRequiredFields()
+
+            if not required_plot_fields.check_fields():
                 return
 
-            commands['n_plot'] = required_plot_values['number of plot points']
-            commands['r_plot_min'] = required_plot_values['minimum R for plotting']
-            commands['r_plot_max'] = required_plot_values['maximum R for plotting']
+            commands['n_plot'] = required_plot_fields.number_of_plot_points
+            commands['r_plot_min'] = required_plot_fields.r_min_plot
+            commands['r_plot_max'] = required_plot_fields.r_max_plot
         else:
             commands['n_plot'] = 0
             commands['r_plot_min'] = 0.0
@@ -250,9 +266,9 @@ class Bsplines(CcNotebookPage):
         lmax = cast(int, self.notebook.cc_data['lmax'])
         orbitals = cast(list[str], self.notebook.lucia_data['total_orbitals'])
 
-        num_bsplines = cast(int, required_field_values['number of bsplines'])
-        bspline_order = cast(int, required_field_values['bspline order'])
-        inner_radius = cast(float, required_field_values['inner box size'])
+        num_bsplines = required_fields.num_bsplines
+        bspline_order = required_fields.bspline_order
+        inner_radius = required_fields.inner_box_size
 
         if self.int_library_combo.get() == 'PRISM':
             self.save_file(self.ASTRA_FILE, {'int_library': 'HybridIntegrals'})

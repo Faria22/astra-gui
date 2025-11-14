@@ -8,6 +8,8 @@ from pathlib import Path
 from tkinter import ttk
 from typing import TYPE_CHECKING, cast
 
+from astra_gui.utils.required_fields_module import RequiredFields
+
 from .cc_notebook_page_module import CcNotebookPage
 
 if TYPE_CHECKING:
@@ -322,16 +324,23 @@ class Dalton(CcNotebookPage):
             ('electrons', self.electrons_entry, int),
         ]
 
-        if not (required_field_values := self.check_field_entries(required_fields)):
+        class DaltonRequiredFields(RequiredFields):
+            symmetry: str
+            multiplicity: int
+            electrons: int
+            symmetry_widget = self.symmetry_combo
+            multiplicity_widget = self.multiplicity_entry
+            electrons_widget = self.electrons_entry
+
+        required_fields = DaltonRequiredFields()
+
+        if not required_fields.check_fields():
             return
 
         # Saving DALTON.INP
-        self.notebook.dalton_data['state_sym'] = self.sym.irrep.index(
-            cast(str, required_field_values['symmetry']),
-        )
-
-        self.notebook.dalton_data['multiplicity'] = int(required_field_values['multiplicity'])
-        self.notebook.dalton_data['electrons'] = int(required_field_values['electrons'])
+        self.notebook.dalton_data['state_sym'] = self.sym.irrep.index(required_fields.symmetry)
+        self.notebook.dalton_data['multiplicity'] = required_fields.multiplicity
+        self.notebook.dalton_data['electrons'] = required_fields.electrons
 
         for occ_ind, occ_option in enumerate(['doubly', 'singly']):
             if self.occupied_orb_vars[occ_ind].get():

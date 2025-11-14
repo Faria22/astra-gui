@@ -21,6 +21,7 @@ from astra_gui.utils.popup_module import (
     required_field_popup,
     warning_popup,
 )
+from astra_gui.utils.required_fields_module import RequiredFields
 from astra_gui.utils.scrollable_module import ScrollableTreeview
 from astra_gui.utils.table_module import Table
 
@@ -759,15 +760,20 @@ class Lucia(CcNotebookPage):
 
     def save(self) -> None:
         """Validate the Lucia form and update the associated input files."""
-        required_fields = [('electrons', self.electrons_entry, int)]
 
-        if not (required_field_values := self.check_field_entries(required_fields)):
+        class LuciaRequiredFields(RequiredFields):
+            electrons: int
+            electrons_widget = self.electrons_entry
+
+        required_fields = LuciaRequiredFields()
+
+        if not required_fields.check_fields():
             return
 
         inact_orbs = self.get_inact_act(self.inact_act_orb_frame, 1)
         act_orbs = self.get_inact_act(self.inact_act_orb_frame, 2)
 
-        total_electrons = int(required_field_values['electrons'])
+        total_electrons = required_fields.electrons
         active_electrons = total_electrons - 2 * sum(inact_orbs)
 
         self.notebook.lucia_data['electrons'] = total_electrons
