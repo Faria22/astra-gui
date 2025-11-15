@@ -17,7 +17,7 @@
 ! Symmetry in the order defined by Dalton
 ! e.g.: 2 in C2V would be B1
 .SYMMETRY
-!!!(symmetry)
+!!!(state_sym)
 .ELECTRONS
 !!!(electrons)
 **END OF INPUT

@@ -13,6 +13,7 @@ import numpy as np
 
 from astra_gui.utils.font_module import title_font
 from astra_gui.utils.popup_module import invalid_input_popup, missing_required_calculation_popup, required_field_popup
+from astra_gui.utils.required_fields_module import RequiredFields
 from astra_gui.utils.scrollable_module import ScrollableFrame
 
 from .cc_notebook_page_module import CcNotebookPage
@@ -180,9 +181,16 @@ class Clscplng(CcNotebookPage):
 
     def save(self) -> None:
         """Persist the close-coupling configuration to disk."""
-        required_fields = [('lmax', self.lmax_entry, int), ('charge', self.charge_entry, int)]
 
-        if not (required_field_values := self.check_field_entries(required_fields)):
+        class ClscplngRequiredFields(RequiredFields):
+            lmax: int
+            charge: int
+            lmax_widget = self.lmax_entry
+            charge_widget = self.charge_entry
+
+        required_fields = ClscplngRequiredFields()
+
+        if not required_fields.check_fields():
             return
 
         ion_list = self.ions_cl.get_target_states()[:, 0]
@@ -191,13 +199,13 @@ class Clscplng(CcNotebookPage):
             required_field_popup('Target states')
             return
 
-        self.notebook.cc_data['lmax'] = int(required_field_values['lmax'])
+        self.notebook.cc_data['lmax'] = required_fields.lmax
 
         commands = {
             'full_basis': str(self.full_basis_var.get()).upper(),
             'group': self.sym.group.upper(),
-            'lmax': required_field_values['lmax'],
-            'charge': required_field_values['charge'],
+            'lmax': required_fields.lmax,
+            'charge': required_fields.charge,
             'electrons': self.notebook.lucia_data['electrons'],
             'ion_list': ' '.join(ion_list),
             'occupied': self.notebook.dalton_data['doubly_occupied'],

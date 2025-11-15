@@ -21,6 +21,7 @@ from astra_gui.utils.popup_module import (
     required_field_popup,
     warning_popup,
 )
+from astra_gui.utils.required_fields_module import RequiredFields
 from astra_gui.utils.scrollable_module import ScrollableTreeview
 from astra_gui.utils.table_module import Table
 
@@ -487,7 +488,7 @@ class Lucia(CcNotebookPage):
             self.electrons_entry.insert(0, str(act_electrons))
 
         if lcsblk := get_value('LCSBLK'):
-            self.notebook.lucia_data['lcsblk'] = lcsblk
+            self.notebook.lucia_data['lcsblk'] = int(lcsblk)
 
         if musymu_line_ind := find_line_ind('MUSYMU'):
             states_data = self.load_states_data(lines, musymu_line_ind + 1)
@@ -749,28 +750,30 @@ class Lucia(CcNotebookPage):
         str
             Title block describing geometry, basis, and description.
         """
-        title_lines = cast(
-            list[str],
-            [
-                self.notebook.molecule_data['geom_label'],
-                self.notebook.molecule_data['basis'],
-                self.notebook.molecule_data['description'],
-            ],
-        )
+        title_lines = [
+            self.notebook.molecule_data['geom_label'],
+            self.notebook.dalton_data['basis'],
+            self.notebook.dalton_data['description'],
+        ]
 
         return '\n'.join(title_lines)
 
     def save(self) -> None:
         """Validate the Lucia form and update the associated input files."""
-        required_fields = [('electrons', self.electrons_entry, int)]
 
-        if not (required_field_values := self.check_field_entries(required_fields)):
+        class LuciaRequiredFields(RequiredFields):
+            electrons: int
+            electrons_widget = self.electrons_entry
+
+        required_fields = LuciaRequiredFields()
+
+        if not required_fields.check_fields():
             return
 
         inact_orbs = self.get_inact_act(self.inact_act_orb_frame, 1)
         act_orbs = self.get_inact_act(self.inact_act_orb_frame, 2)
 
-        total_electrons = int(required_field_values['electrons'])
+        total_electrons = required_fields.electrons
         active_electrons = total_electrons - 2 * sum(inact_orbs)
 
         self.notebook.lucia_data['electrons'] = total_electrons
@@ -791,7 +794,7 @@ class Lucia(CcNotebookPage):
             'active': ','.join(str(orb) for orb in act_orbs),
             'electrons': active_electrons,
             'musymu': musymu,
-            'ref_sym': self.notebook.dalton_data['ref_sym'],
+            'ref_sym': self.notebook.dalton_data['state_sym'],
             'roots': max_number_roots + 1,
             'lcsblk': self.notebook.lucia_data['lcsblk'],
             'title': self.get_title(),

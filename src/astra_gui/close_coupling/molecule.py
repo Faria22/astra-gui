@@ -197,7 +197,7 @@ class Molecule(CcNotebookPage):
         get_value = partial(self.get_value_from_lines, lines)
 
         if basis := get_value('BASIS'):
-            self.notebook.molecule_data['basis'] = basis
+            self.notebook.dalton_data['basis'] = basis
 
         if geometry_label := get_value('Label:', shift=0).replace('Label:', '').strip():
             self.notebook.molecule_data['geom_label'] = geometry_label
@@ -206,7 +206,7 @@ class Molecule(CcNotebookPage):
             # Description is always below label
             description = get_value('Label:')
             if not description.startswith('Atomtypes'):
-                self.notebook.molecule_data['description'] = description
+                self.notebook.dalton_data['description'] = description
 
         units = 'Angstrom'
         self.notebook.molecule_data['units'] = units
@@ -328,7 +328,7 @@ class Molecule(CcNotebookPage):
 
         self.save_file(
             self.MOLECULE_FILE,
-            self.notebook.molecule_data,
+            {**self.notebook.molecule_data, **self.notebook.dalton_data},
             '!',
             blank_lines=False,
         )
