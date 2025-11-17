@@ -4,6 +4,7 @@ import logging
 import re
 import tkinter as tk
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from pathlib import Path
 from tkinter import filedialog, ttk
 from typing import TYPE_CHECKING, Any, overload
@@ -436,16 +437,17 @@ class PumpProbeFrame(PulseParameterFrame):
             Pulse data, TDSE data, pulse/TDSE file paths, and tabulation mapping.
         """
 
+        @dataclass
         class PumpProbeRequiredFields(RequiredFields):
-            minimum_time_delay: float
-            maximum_time_delay: float
-            time_delay_spacing: float
-            simulation_label: str
+            minimum_time_delay: float = 0
+            maximum_time_delay: float = 0
+            time_delay_spacing: float = 0
+            simulation_label: str = ''
 
-            minimum_time_delay_widget = self.min_tau
-            maximum_time_delay_widget = self.max_tau
-            time_delay_spacing_widget = self.delta_tau
-            simulation_label_widget = self.sim_label
+            minimum_time_delay_widget: ttk.Entry = self.min_tau
+            maximum_time_delay_widget: ttk.Entry = self.max_tau
+            time_delay_spacing_widget: ttk.Entry = self.delta_tau
+            simulation_label_widget: ttk.Entry = self.sim_label
 
         required_fields = PumpProbeRequiredFields()
 

@@ -182,11 +182,13 @@ class Clscplng(CcNotebookPage):
     def save(self) -> None:
         """Persist the close-coupling configuration to disk."""
 
+        @dataclass
         class ClscplngRequiredFields(RequiredFields):
-            lmax: int
-            charge: int
-            lmax_widget = self.lmax_entry
-            charge_widget = self.charge_entry
+            lmax: int = 0
+            charge: int = 0
+
+            lmax_widget: ttk.Entry = self.lmax_entry
+            charge_widget: ttk.Entry = self.charge_entry
 
         required_fields = ClscplngRequiredFields()
 

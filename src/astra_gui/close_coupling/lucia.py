@@ -761,9 +761,11 @@ class Lucia(CcNotebookPage):
     def save(self) -> None:
         """Validate the Lucia form and update the associated input files."""
 
+        @dataclass
         class LuciaRequiredFields(RequiredFields):
-            electrons: int
-            electrons_widget = self.electrons_entry
+            electrons: int = 0
+
+            electrons_widget: ttk.Entry = self.electrons_entry
 
         required_fields = LuciaRequiredFields()
 

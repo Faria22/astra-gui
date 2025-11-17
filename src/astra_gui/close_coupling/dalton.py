@@ -3,6 +3,7 @@
 import logging
 import re
 import tkinter as tk
+from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 from tkinter import ttk
@@ -324,18 +325,22 @@ class Dalton(CcNotebookPage):
             ('electrons', self.electrons_entry, int),
         ]
 
+        @dataclass
         class DaltonRequiredFields(RequiredFields):
-            symmetry: str
-            multiplicity: int
-            electrons: int
-            symmetry_widget = self.symmetry_combo
-            multiplicity_widget = self.multiplicity_entry
-            electrons_widget = self.electrons_entry
+            symmetry: str = ''
+            multiplicity: int = 0
+            electrons: int = 0
+
+            symmetry_widget: ttk.Combobox = self.symmetry_combo
+            multiplicity_widget: ttk.Entry = self.multiplicity_entry
+            electrons_widget: ttk.Entry = self.electrons_entry
 
         required_fields = DaltonRequiredFields()
 
         if not required_fields.check_fields():
             return
+
+        logger.debug(required_fields.__dict__)
 
         # Saving DALTON.INP
         self.notebook.dalton_data['state_sym'] = self.sym.irrep.index(required_fields.symmetry)

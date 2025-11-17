@@ -2,6 +2,7 @@
 
 import logging
 import tkinter as tk
+from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 from tkinter import ttk
@@ -173,20 +174,21 @@ class Bsplines(CcNotebookPage):
         """Validate the current configuration and write all required input files."""
         # Saving EXTERNAL_BASIS_BSPLINES.INP
 
+        @dataclass
         class BsplineRequiredFields(RequiredFields):
-            box_size: float
-            num_bsplines: int
-            bspline_order: int
-            inner_box_size: float
-            mask_radius: float
-            mask_width: float
+            box_size: float = 0
+            num_bsplines: int = 0
+            bspline_order: int = 0
+            inner_box_size: float = 0
+            mask_radius: float = 0
+            mask_width: float = 0
 
-            box_size_widget = self.box_size_entry
-            number_of_bsplines_widget = self.num_bspline_entry
-            bspline_order_widget = self.bspline_order_entry
-            inner_box_size_widget = self.inner_box_size_entry
-            mask_radius_widget = self.mask_radius_entry
-            mask_width_widget = self.mask_width_entry
+            box_size_widget: ttk.Entry = self.box_size_entry
+            number_of_bsplines_widget: ttk.Entry = self.num_bspline_entry
+            bspline_order_widget: ttk.Entry = self.bspline_order_entry
+            inner_box_size_widget: ttk.Entry = self.inner_box_size_entry
+            mask_radius_widget: ttk.Entry = self.mask_radius_entry
+            mask_width_widget: ttk.Entry = self.mask_width_entry
 
         required_fields = BsplineRequiredFields()
 
@@ -238,14 +240,15 @@ class Bsplines(CcNotebookPage):
 
         if self.plot_var.get():
 
+            @dataclass
             class PlotRequiredFields(RequiredFields):
-                number_of_plot_points: int
-                r_min_plot: float
-                r_max_plot: float
+                number_of_plot_points: int = 0
+                r_min_plot: float = 0
+                r_max_plot: float = 0
 
-                number_of_plot_points_widget = self.num_plot_points_entry
-                r_min_plot_widget = self.r_min_plot_entry
-                r_max_plot_widget = self.r_max_plot_entry
+                number_of_plot_points_widget: ttk.Entry = self.num_plot_points_entry
+                r_min_plot_widget: ttk.Entry = self.r_min_plot_entry
+                r_max_plot_widget: ttk.Entry = self.r_max_plot_entry
 
             required_plot_fields = PlotRequiredFields()
 

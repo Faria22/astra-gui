@@ -1,11 +1,14 @@
 """Test file."""
 
+import logging
 from dataclasses import dataclass
 from dataclasses import fields as dc_fields
 from typing import get_type_hints
 
 from astra_gui.utils.notebook_module import NotebookPage
 from astra_gui.utils.popup_module import invalid_input_popup, required_field_popup
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -47,6 +50,7 @@ class RequiredFields:
         hints = get_type_hints(self.__class__)
         for f in dc_fields(self):
             field_name = f.name
+            logger.debug('Checking required field: %s', field_name)
             if 'widget' in field_name:
                 continue
             expected_type = hints.get(field_name, str)
@@ -62,5 +66,7 @@ class RequiredFields:
                 type_str = 'integer' if expected_type is int else 'float' if expected_type is float else 'string'
                 invalid_input_popup(f'{field_name} must be a {type_str} value.')
                 return False
+
+            setattr(self, field_name, expected_type(val))
 
         return True
