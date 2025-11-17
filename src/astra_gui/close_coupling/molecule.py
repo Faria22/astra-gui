@@ -117,7 +117,7 @@ class Molecule(CcNotebookPage):
         atom_centers = self.atoms_table.get()[2:]
         atom_centers = np.where(atom_centers, atom_centers, '0.0').T.astype(float)
 
-        temp_atom_charges = atom_charges.copy()
+        temp_atom_charges = atom_charges.tolist()
         temp_atom_centers = atom_centers.copy()
 
         sym = Symmetry(self.get_text_from_widget(self.generators_combo).split()[0])
