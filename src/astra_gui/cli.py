@@ -32,7 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     create_cc.add_argument('-b', '--bsplines', action='store_true')
 
     time_independent = parser.add_argument_group('Time Independent pages')
-    time_independent.add_argument('-struc', '--structural', action='store_true')
+    time_independent.add_argument('-struct', '--structural', action='store_true')
     time_independent.add_argument('-scatt', '--scattering', action='store_true')
     time_independent.add_argument('-pad', '--pad', action='store_true')
 
