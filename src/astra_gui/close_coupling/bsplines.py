@@ -184,7 +184,7 @@ class Bsplines(CcNotebookPage):
             mask_width: float = 0
 
             box_size_widget: ttk.Entry = self.box_size_entry
-            number_of_bsplines_widget: ttk.Entry = self.num_bspline_entry
+            num_bsplines_widget: ttk.Entry = self.num_bspline_entry
             bspline_order_widget: ttk.Entry = self.bspline_order_entry
             inner_box_size_widget: ttk.Entry = self.inner_box_size_entry
             mask_radius_widget: ttk.Entry = self.mask_radius_entry
